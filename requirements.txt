@@ -6,3 +6,4 @@ pytest
 mlflow
 dvc
 prefect
+pre-commit
