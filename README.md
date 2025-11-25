@@ -93,5 +93,3 @@ If you modify a tracked dataset or model:
    ```bash
    dvc push
    ```
-
-Each Git commit corresponds to a data version — making it easy to roll back or compare versions later.

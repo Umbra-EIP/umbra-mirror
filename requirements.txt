@@ -3,8 +3,10 @@ pandas
 scikit-learn
 torch
 pytest
+pytest-cov
 mlflow
 dvc
 dvc[ssh]
 prefect
 pre-commit
+python-dotenv>=1.0.0
