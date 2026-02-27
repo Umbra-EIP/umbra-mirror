@@ -1,97 +1,45 @@
-# Data Version Control (DVC) Usage Guide
+# Umbra – EIP
 
-This project uses **DVC (Data Version Control)** to manage datasets and model files efficiently. DVC allows versioning large files, sharing data between collaborators, and keeping your Git repository lightweight.
+## Description du projet
+Ce projet vise à développer une intelligence artificielle capable de devenir une **copie motrice de l’individu**, fonctionnant **en tandem** avec lui. Grâce à l’utilisation de **technologies non-invasives** comme les **électromyogrammes (EMG)** et les **électroencéphalogrammes (EEG)**, l’IA peut déléguer le contrôle de **membres supplémentaires ou de remplacement**, ou assister dans le contrôle d’un **exosquelette**.
 
----
-
-## ⚙️ Prerequisites
-
-DVC is already configured for this repository.
-Make sure you have DVC installed locally:
-
-```bash
-dvc --version
-```
-
-If DVC is not installed -> pip install requirements.txt
+Cette approche ouvre des perspectives importantes :
+- **Recherche et médecine** : lutte contre les maladies neuro-dégénératives et réhabilitation motrice.
+- **Usage quotidien et sécurité** : augmentation des capacités et assistance dans la vie de tous les jours.
 
 ---
 
-## 📁 Adding Data to DVC
+## Fonctionnement
 
-To track a new dataset or model file with DVC:
+Le projet repose sur deux modèles principaux :
 
-```bash
-dvc add path/to/your/data
-```
+1. **Modèle EEG → EMG**  
+   À partir des signaux EEG du cerveau, le modèle prédit les signaux EMG correspondants, capturant ainsi l’intention motrice de l’utilisateur.
 
-What this does:
-- Creates a `.dvc` file (for example, `data.csv.dvc`) that points to the large file.
-- Adds the actual large file to the DVC cache and ignores it in Git.
-
-Then commit the generated `.dvc` file and updated `.gitignore`:
-
-```bash
-git add path/to/your/data.dvc .gitignore
-git commit -m "Track dataset with DVC"
-```
+2. **Modèle EMG → Mouvement**  
+   Ce modèle prend les signaux EMG et prédit les mouvements des membres ou de l’exosquelette, permettant à l’IA de reproduire ou assister les actions de l’utilisateur en temps réel.
 
 ---
 
-## ☁️ Pushing Data to Remote Storage
-
-To upload tracked files from your local cache to the remote storage (already configured for this repo):
-
-```bash
-dvc push
-```
-
-Notes:
-- `dvc push` uploads only DVC-tracked files.
-- The remote configuration is already set up, so you don’t need extra flags.
-
-To push a specific file:
-
-```bash
-dvc push path/to/your/data.dvc
-```
+## Technologies utilisées
+- **EEG** (Électroencéphalogrammes) pour capter l’activité cérébrale.  
+- **EMG** (Électromyogrammes) pour capter l’activité musculaire.  
+- **Machine Learning / Deep Learning** pour prédire et traduire les signaux en mouvements.  
+- **Python** comme langage principal de développement.  
 
 ---
 
-## ⬇️ Pulling Data from Remote
-
-When you clone the repository or switch to a new branch that references data you don’t have locally:
-
-```bash
-dvc pull
-```
-
-This downloads all DVC-tracked files needed for the current Git commit.
-
-To pull a specific file:
-
-```bash
-dvc pull path/to/your/data.dvc
-```
+## Cas d’usage
+- Assistance aux personnes atteintes de troubles moteurs ou neurodégénératifs.  
+- Contrôle d’exosquelettes pour la rééducation ou l’augmentation physique.  
+- Applications grand public dans le domaine de la sécurité ou de l’ergonomie.  
 
 ---
 
-## 🔁 Updating Data Versions
+## Installation
+```bash
+# Cloner le dépôt
+git clone https://github.com/votre-utilisateur/projet-ia-motrice.git
 
-If you modify a tracked dataset or model:
-
-1. Re-add it with DVC
-   ```bash
-   dvc add path/to/your/data
-   ```
-2. Commit the updated `.dvc` file
-   ```bash
-   git add path/to/your/data.dvc
-   git commit -m "Update dataset"
-   ```
-3. Push the new version
-   ```bash
-   dvc push
-   ```
-
-Each Git commit corresponds to a data version — making it easy to roll back or compare versions later.
+# Installer les dépendances
+pip install -r requirements.txt
