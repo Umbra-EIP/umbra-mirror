@@ -1,0 +1,24 @@
+# src/config.py
+
+FS = 1000
+
+LOWPASS_CUTOFF = 5
+FILTER_ORDER = 2
+
+EXERCISE_PATH = "data/exercises"
+NINAPRO_ROOT = "data/ninapro"
+PREPROCESS_PATH = "data/preprocessed"
+
+WINDOW_MS = 500
+WINDOW_SAMPLES = int(FS * WINDOW_MS / 1000)
+WINDOW_STEP_MS = 100
+WINDOW_STEP_SAMPLES = int(FS * WINDOW_STEP_MS / 1000)
+
+TRAIN_REPS = [1, 3, 5, 7, 9]
+VAL_REPS = [2, 4, 8]
+TEST_REPS = [6, 10]
+USE_REP = False
+
+REST_LABEL = 0
+
+SAMPLING_EMG_RATE = 100
