@@ -1,4 +1,12 @@
 import os
+import sys
+from pathlib import Path
+
+# Ensure project root is on path when running from src/dashboard/ (e.g. streamlit run app.py)
+_root = Path(__file__).resolve().parents[2]
+if str(_root) not in sys.path:
+    sys.path.insert(0, str(_root))
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -6,61 +14,8 @@ import tensorflow as tf
 import altair as alt
 
 from src.config import MODEL_DIR, PREPROCESS_PATH
+from src.emg_movement.gestures import ALL_GESTURES
 
-ALL_GESTURES = [
-    "index_flexion",
-    "index_extension",
-    "middle_flexion",
-    "middle_extension",
-    "ring_flexion",
-    "ring_extension",
-    "little_flexion",
-    "little_extension",
-    "thumb_adduction",
-    "thumb_abduction",
-    "thumb_flexion",
-    "thumb_extension",
-    "thumb_up",
-    "index_middle_extension_others_flexed",
-    "ring_little_flexion_others_extended",
-    "thumb_opposition",
-    "finger_abduction",
-    "fist",
-    "pointing_index",
-    "finger_adduction",
-    "wrist_supination_middle_axis",
-    "wrist_pronation_middle_axis",
-    "wrist_supination_little_axis",
-    "wrist_pronation_little_axis",
-    "wrist_flexion",
-    "wrist_extension",
-    "wrist_radial_deviation",
-    "wrist_ulnar_deviation",
-    "wrist_extension_closed_hand",
-    "large_diameter_grasp",
-    "small_diameter_grasp",
-    "fixed_hook_grasp",
-    "index_extension_grasp",
-    "medium_wrap",
-    "ring_grasp",
-    "prismatic_four_finger_grasp",
-    "stick_grasp",
-    "writing_tripod_grasp",
-    "power_sphere_grasp",
-    "three_finger_sphere_grasp",
-    "precision_sphere_grasp",
-    "tripod_grasp",
-    "prismatic_pinch_grasp",
-    "tip_pinch_grasp",
-    "quadrupod_grasp",
-    "lateral_grasp",
-    "parallel_extension_grasp",
-    "extension_type_grasp",
-    "power_disk_grasp",
-    "open_bottle_tripod_grasp",
-    "turn_screw_grasp",
-    "cut_something_index_grasp",
-]
 id_to_gesture = {i: g for i, g in enumerate(ALL_GESTURES)}
 
 for key in ["emg_data", "labels", "model"]:
