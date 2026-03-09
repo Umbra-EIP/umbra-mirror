@@ -65,7 +65,8 @@ jobs:
           conda install -y black
           black --check .
 
-      - name: Run test_env.py
+      - name: Run tests
         shell: bash -l {0}
         run: |
-          python tests/test_env.py
+          pip install pytest
+          python -m pytest tests/ -v

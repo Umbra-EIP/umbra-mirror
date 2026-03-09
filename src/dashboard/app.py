@@ -5,6 +5,8 @@ import streamlit as st
 import tensorflow as tf
 import altair as alt
 
+from src.config import MODEL_DIR, PREPROCESS_PATH
+
 ALL_GESTURES = [
     "index_flexion",
     "index_extension",
@@ -61,8 +63,6 @@ ALL_GESTURES = [
 ]
 id_to_gesture = {i: g for i, g in enumerate(ALL_GESTURES)}
 
-MODEL_ROOT = "src/models"
-
 for key in ["emg_data", "labels", "model"]:
     if key not in st.session_state:
         st.session_state[key] = None
@@ -73,24 +73,27 @@ st.title("🖐️ EMG Semantic Hand Movement Decoder")
 st.sidebar.header("Data Selection")
 st.sidebar.radio("Choose data source:", ["Use preprocessed data"])
 
-PREPROCESSED_ROOT = "data/preprocessed"
-available_datasets = [
-    d
-    for d in os.listdir(PREPROCESSED_ROOT)
-    if os.path.isdir(os.path.join(PREPROCESSED_ROOT, d))
-]
+if not os.path.isdir(PREPROCESS_PATH):
+    st.sidebar.error("No preprocessed data directory found.")
+    available_datasets = []
+else:
+    available_datasets = [
+        d
+        for d in os.listdir(PREPROCESS_PATH)
+        if os.path.isdir(os.path.join(PREPROCESS_PATH, d)) and d.isdigit()
+    ]
 
 if not available_datasets:
     st.sidebar.error("No preprocessed datasets found.")
 else:
     selected_dataset = st.sidebar.selectbox("Choose a dataset", available_datasets)
-    dataset_path = os.path.join(PREPROCESSED_ROOT, selected_dataset)
+    dataset_path = os.path.join(PREPROCESS_PATH, selected_dataset)
     x_path = os.path.join(dataset_path, "X.npy")
-    y_path = os.path.join(dataset_path, "Y.npy")
+    y_path = os.path.join(dataset_path, "y.npy")
 
     if st.sidebar.button("Load dataset"):
         if not os.path.exists(x_path) or not os.path.exists(y_path):
-            st.sidebar.error("X.npy or Y.npy is missing in the selected folder.")
+            st.sidebar.error("X.npy or y.npy is missing in the selected folder.")
         else:
             with st.spinner("Loading dataset..."):
                 st.session_state.emg_data = np.load(x_path)
@@ -100,7 +103,11 @@ else:
             st.write("**Labels shape:**", st.session_state.labels.shape)
 
 st.sidebar.header("Model Selection")
-available_models = [f for f in os.listdir(MODEL_ROOT) if not f.startswith(".")]
+if not os.path.isdir(MODEL_DIR):
+    st.sidebar.error("No models directory found.")
+    available_models = []
+else:
+    available_models = [f for f in os.listdir(MODEL_DIR) if not f.startswith(".")]
 
 if not available_models:
     st.sidebar.error("No models found in src/models/")
@@ -109,7 +116,7 @@ else:
     if selected_model_name and st.sidebar.button("Load Model"):
         with st.spinner(f"Loading model {selected_model_name}..."):
             st.session_state.model = tf.keras.models.load_model(
-                os.path.join(MODEL_ROOT, selected_model_name)
+                os.path.join(MODEL_DIR, selected_model_name)
             )
         st.sidebar.success("Model loaded!")
 

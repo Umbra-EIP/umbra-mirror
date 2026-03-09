@@ -24,4 +24,6 @@ ENV PYTHONUNBUFFERED=1 \
     NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-CMD ["echo", "Hello"]
+# Default: run Streamlit dashboard (override for training/preprocess)
+EXPOSE 8501
+CMD ["streamlit", "run", "src/dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
