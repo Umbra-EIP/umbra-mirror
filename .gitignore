@@ -3,10 +3,13 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+.DS_Store
+
 # C extensions
 *.so
 
 data/ninapro/s*/*
+data/preprocessed/
 
 # Distribution / packaging
 .Python
