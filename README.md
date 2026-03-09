@@ -83,6 +83,7 @@ streamlit run src/dashboard/app.py
 ```
 
 Dans l’interface : choisir un dataset dans `data/preprocessed/`, charger un modèle depuis `src/models/`, puis lancer l’inférence.
+Le dashboard propose aussi une page **Dataset Quality Checker** (sidebar) pour valider l’intégrité et la répartition des jeux préprocessés (X.npy / y.npy) avant entraînement.
 
 ---
 
@@ -91,7 +92,7 @@ Dans l’interface : choisir un dataset dans `data/preprocessed/`, charger un mo
 - `src/config.py` : chemins et constantes (NinaPro, preprocessed, models).
 - `src/emg_movement/` : préprocessing, modèle CNN-LSTM, entraînement, utils NinaPro.
 - `src/eeg_emg/` : futur modèle EEG → EMG (placeholder).
-- `src/dashboard/` : application Streamlit (EMG Hand Movement Decoder).
+- `src/dashboard/` : application Streamlit (EMG Hand Movement Decoder, Dataset Quality Checker).
 - `src/models/` : modèles Keras sauvegardés (.keras).
 - `data/ninapro/` : données brutes NinaPro.
 - `data/preprocessed/` : jeux préprocessés (X.npy, y.npy par sous-dossier).
