@@ -9,6 +9,8 @@ NINAPRO_ROOT = "data/ninapro"
 PREPROCESS_PATH = "data/preprocessed"
 MODEL_DIR = "src/models"
 
+QUALITY_REPORTS_DIR = "data/quality_reports"
+
 WINDOW_MS = 500
 WINDOW_SAMPLES = int(FS * WINDOW_MS / 1000)
 WINDOW_STEP_MS = 100

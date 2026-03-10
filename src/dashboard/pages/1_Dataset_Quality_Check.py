@@ -18,6 +18,9 @@ from src.dashboard.dataset_quality import (
     get_available_datasets,
     check_quality,
     QualityThresholds,
+    save_report,
+    load_report,
+    list_saved_reports,
     MIN_SAMPLES_PER_CLASS_TRAIN,
     MIN_SAMPLES_PER_CLASS_VAL,
     MIN_SAMPLES_PER_CLASS_TEST,
@@ -74,6 +77,11 @@ selected = st.sidebar.selectbox(
     key="quality_dataset_select",
 )
 
+# Clear report when user switches to a different dataset
+if st.session_state.get("quality_report") is not None:
+    if st.session_state["quality_report"].dataset_id != selected:
+        st.session_state["quality_report"] = None
+
 st.sidebar.divider()
 st.sidebar.subheader("Thresholds")
 st.sidebar.caption("Minimum samples per class in each split (leave 0 for default).")
@@ -114,19 +122,85 @@ thresholds = QualityThresholds(
     min_balance_ratio=min_balance,
 )
 
+st.sidebar.divider()
+st.sidebar.subheader("Report name")
+st.sidebar.caption(
+    "Give this report a name to save it separately (e.g. 'strict', 'loose')."
+)
+report_name = st.sidebar.text_input(
+    "Report name",
+    value="default",
+    key="report_name_input",
+    help="Only letters, numbers, hyphens and underscores. Used as part of the saved filename.",
+)
+report_name = report_name.strip() or "default"
+
 run_check = st.sidebar.button("Run quality check", type="primary")
 
 if run_check and selected:
     with st.spinner("Running quality checks..."):
-        report = check_quality(selected, thresholds=thresholds)
+        report = check_quality(selected, thresholds=thresholds, report_name=report_name)
     st.session_state["quality_report"] = report
+    try:
+        path = save_report(report)
+        st.sidebar.success(f"Saved as **{path.name}**")
+    except Exception as e:
+        st.sidebar.warning(f"Report displayed but save failed: {e}")
+
+# ----- Saved reports -----
+st.sidebar.divider()
+st.sidebar.subheader("Saved reports")
+saved = list_saved_reports()
+if saved:
+    saved_options = [f"Dataset {did} — {name}" for did, name, _ in saved]
+    saved_paths = [path for _, _, path in saved]
+    chosen = st.sidebar.selectbox(
+        "Load a saved report",
+        options=range(len(saved_options)),
+        format_func=lambda i: saved_options[i],
+        key="saved_report_select",
+    )
+    col_load, col_del = st.sidebar.columns(2)
+    if col_load.button("Load", key="btn_load_report"):
+        report_loaded = load_report(saved_paths[chosen])
+        if report_loaded is not None:
+            st.session_state["quality_report"] = report_loaded
+        else:
+            st.sidebar.error("Failed to load report.")
+    if col_del.button("Delete", key="btn_delete_report"):
+        try:
+            saved_paths[chosen].unlink()
+            st.sidebar.success("Report deleted.")
+            st.session_state["quality_report"] = None
+        except Exception as e:
+            st.sidebar.error(f"Delete failed: {e}")
+else:
+    st.sidebar.caption("_No saved reports yet. Run a check to save._")
+
+# Show which report is currently displayed
+if st.session_state.get("quality_report") is not None:
+    r = st.session_state["quality_report"]
+    st.sidebar.caption(f"Viewing: dataset **{r.dataset_id}** — **{r.report_name}**")
+else:
+    st.sidebar.caption("_No report loaded_")
 
 report = st.session_state.get("quality_report")
 if report is None:
-    st.info("Select a dataset and click **Run quality check** to see the report.")
+    st.info(
+        "Select a dataset and click **Run quality check**, or load a saved report from the sidebar."
+    )
     st.stop()
 
 # ----- Report -----
+# One-line summary
+summary = (
+    f"Dataset **{report.dataset_id}** — "
+    f"report **{report.report_name}** — "
+    f"{report.total_windows:,} windows, {report.num_classes} classes — "
+    f"**{'PASS' if report.passed else 'FAIL'}**"
+)
+st.markdown(summary)
+
 st.divider()
 
 # Verdict
@@ -174,6 +248,22 @@ if report.warnings:
         if report.classes_with_few_test:
             names = [label_to_gesture_name(c) for c in report.classes_with_few_test]
             st.markdown(f"- **Test:** {', '.join(names)}")
+else:
+    st.success("No warnings.")
+
+st.divider()
+
+# Thresholds used for this report
+st.subheader("Thresholds used")
+if report.thresholds_used:
+    t = report.thresholds_used
+    tc1, tc2, tc3, tc4 = st.columns(4)
+    tc1.metric("Min train / class", t.get("min_samples_train", "—"))
+    tc2.metric("Min val / class", t.get("min_samples_val", "—"))
+    tc3.metric("Min test / class", t.get("min_samples_test", "—"))
+    tc4.metric("Min balance ratio", f"{t.get('min_balance_ratio', 0):.3f}")
+else:
+    st.caption("No threshold information saved (older report).")
 
 st.divider()
 
@@ -205,6 +295,16 @@ st.divider()
 
 # Integrity
 st.subheader("Integrity")
+integrity_ok = (
+    report.x_nan_count == 0
+    and report.x_inf_count == 0
+    and report.y_nan_count == 0
+    and report.y_inf_count == 0
+)
+if integrity_ok:
+    st.caption("All clean (no NaN/Inf).")
+else:
+    st.caption("Issues detected.")
 i1, i2, i3, i4 = st.columns(4)
 i1.metric("NaN in X", report.x_nan_count)
 i2.metric("Inf in X", report.x_inf_count)
@@ -290,9 +390,19 @@ st.divider()
 # Export
 st.subheader("Export report")
 buf = StringIO()
-buf.write(f"Dataset Quality Report — dataset_id={report.dataset_id}\n")
+buf.write(
+    f"Dataset Quality Report — dataset_id={report.dataset_id} — name={report.report_name}\n"
+)
 buf.write("=" * 50 + "\n")
 buf.write(f"Verdict: {'PASS' if report.passed else 'FAIL'}\n")
+if report.thresholds_used:
+    t = report.thresholds_used
+    buf.write(
+        f"Thresholds: min_train={t.get('min_samples_train')} "
+        f"min_val={t.get('min_samples_val')} "
+        f"min_test={t.get('min_samples_test')} "
+        f"min_balance_ratio={t.get('min_balance_ratio')}\n"
+    )
 buf.write(f"X shape: {report.x_shape}, y shape: {report.y_shape}\n")
 buf.write(f"Total windows: {report.total_windows}, Classes: {report.num_classes}\n")
 if report.x_min is not None:
@@ -311,10 +421,46 @@ if report.counts_per_class:
     for k, v in sorted(report.counts_per_class.items()):
         buf.write(f"  {label_to_gesture_name(k)}: {v}\n")
 
-csv_report = buf.getvalue()
-st.download_button(
-    "Download report (text)",
-    data=csv_report,
-    file_name=f"quality_report_dataset_{report.dataset_id}.txt",
-    mime="text/plain",
-)
+txt_report = buf.getvalue()
+ex1, ex2 = st.columns(2)
+with ex1:
+    slug = f"dataset_{report.dataset_id}_{report.report_name}"
+    st.download_button(
+        "Download report (text)",
+        data=txt_report,
+        file_name=f"quality_report_{slug}.txt",
+        mime="text/plain",
+    )
+with ex2:
+    if report.counts_per_class:
+        df_export = pd.DataFrame(
+            [
+                {"movement": label_to_gesture_name(k), "label": k, "count": v}
+                for k, v in sorted(report.counts_per_class.items())
+            ]
+        )
+        st.download_button(
+            "Download counts (CSV)",
+            data=df_export.to_csv(index=False),
+            file_name=f"quality_counts_{slug}.csv",
+            mime="text/csv",
+        )
+
+if report.train_per_class is not None:
+    split_export = pd.DataFrame(
+        [
+            {
+                "movement": label_to_gesture_name(lab),
+                "train": report.train_per_class[int(lab)],
+                "val": report.val_per_class[int(lab)],
+                "test": report.test_per_class[int(lab)],
+            }
+            for lab in sorted(report.train_per_class.keys())
+        ]
+    )
+    st.download_button(
+        "Download split table (CSV)",
+        data=split_export.to_csv(index=False),
+        file_name=f"quality_split_{slug}.csv",
+        mime="text/csv",
+    )
