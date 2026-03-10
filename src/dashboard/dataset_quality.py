@@ -19,6 +19,16 @@ MIN_CLASS_BALANCE_RATIO = 0.05  # min count / max count per class
 VARIANCE_THRESHOLD_FLAT = 1e-10  # windows with per-channel var below this are "flat"
 
 
+@dataclass
+class QualityThresholds:
+    """Optional thresholds for quality checks. None means use module default."""
+
+    min_samples_train: Optional[int] = None
+    min_samples_val: Optional[int] = None
+    min_samples_test: Optional[int] = None
+    min_balance_ratio: Optional[float] = None
+
+
 def get_available_datasets() -> list[str]:
     """Return sorted list of dataset IDs (folder names) in PREPROCESS_PATH."""
     if not os.path.isdir(PREPROCESS_PATH):
@@ -59,6 +69,12 @@ class QualityReport:
     y_shape: Optional[tuple] = None
     x_dtype: Optional[str] = None
     y_dtype: Optional[str] = None
+
+    # X value range (global; for scaling/clipping sanity)
+    x_min: Optional[float] = None
+    x_max: Optional[float] = None
+    x_mean: Optional[float] = None
+    x_mean_per_channel: Optional[list] = None  # when X has channel dim
 
     # Integrity
     x_nan_count: int = 0
@@ -122,12 +138,36 @@ def _stratified_split_indices(
     return np.array(train_idx), np.array(val_idx), np.array(test_idx)
 
 
-def check_quality(dataset_id: str) -> QualityReport:
+def check_quality(
+    dataset_id: str, thresholds: Optional[QualityThresholds] = None
+) -> QualityReport:
     """
     Run all quality checks on a preprocessed dataset.
     Returns a QualityReport with metrics and pass/fail.
+    Optional thresholds override the default min samples and balance ratio.
     """
     report = QualityReport(dataset_id=dataset_id, loaded=False)
+    t = thresholds or QualityThresholds()
+    min_train = (
+        t.min_samples_train
+        if t.min_samples_train is not None
+        else MIN_SAMPLES_PER_CLASS_TRAIN
+    )
+    min_val = (
+        t.min_samples_val
+        if t.min_samples_val is not None
+        else MIN_SAMPLES_PER_CLASS_VAL
+    )
+    min_test = (
+        t.min_samples_test
+        if t.min_samples_test is not None
+        else MIN_SAMPLES_PER_CLASS_TEST
+    )
+    min_balance = (
+        t.min_balance_ratio
+        if t.min_balance_ratio is not None
+        else MIN_CLASS_BALANCE_RATIO
+    )
 
     X, y = load_dataset(dataset_id)
     if X is None or y is None:
@@ -140,6 +180,15 @@ def check_quality(dataset_id: str) -> QualityReport:
     report.x_dtype = str(X.dtype)
     report.y_dtype = str(y.dtype)
     report.total_windows = len(y)
+
+    # X value range (global and per-channel when applicable)
+    if np.issubdtype(X.dtype, np.floating) or np.issubdtype(X.dtype, np.integer):
+        report.x_min = float(np.nanmin(X))
+        report.x_max = float(np.nanmax(X))
+        report.x_mean = float(np.nanmean(X))
+        if X.ndim == 3:
+            # (n_windows, time, channels) -> mean per channel
+            report.x_mean_per_channel = np.nanmean(X, axis=(0, 1)).tolist()
 
     # Integrity
     report.x_nan_count = int(np.isnan(X).sum())
@@ -170,7 +219,7 @@ def check_quality(dataset_id: str) -> QualityReport:
         report.min_count / report.max_count if report.max_count > 0 else 0.0
     )
 
-    if report.balance_ratio < MIN_CLASS_BALANCE_RATIO:
+    if report.balance_ratio < min_balance:
         report.warnings.append(
             f"Strong class imbalance: ratio {report.balance_ratio:.3f} "
             f"(min {report.min_count} / max {report.max_count})"
@@ -192,25 +241,25 @@ def check_quality(dataset_id: str) -> QualityReport:
             int(lab): int((y_test == lab).sum()) for lab in report.unique_labels
         }
         for lab in report.unique_labels:
-            if report.train_per_class[int(lab)] < MIN_SAMPLES_PER_CLASS_TRAIN:
+            if report.train_per_class[int(lab)] < min_train:
                 report.classes_with_few_train.append(int(lab))
-            if report.val_per_class[int(lab)] < MIN_SAMPLES_PER_CLASS_VAL:
+            if report.val_per_class[int(lab)] < min_val:
                 report.classes_with_few_val.append(int(lab))
-            if report.test_per_class[int(lab)] < MIN_SAMPLES_PER_CLASS_TEST:
+            if report.test_per_class[int(lab)] < min_test:
                 report.classes_with_few_test.append(int(lab))
         if report.classes_with_few_train:
             report.warnings.append(
-                f"Classes with < {MIN_SAMPLES_PER_CLASS_TRAIN} samples in train: "
+                f"Classes with < {min_train} samples in train: "
                 f"{report.classes_with_few_train}"
             )
         if report.classes_with_few_val:
             report.warnings.append(
-                f"Classes with < {MIN_SAMPLES_PER_CLASS_VAL} samples in val: "
+                f"Classes with < {min_val} samples in val: "
                 f"{report.classes_with_few_val}"
             )
         if report.classes_with_few_test:
             report.warnings.append(
-                f"Classes with < {MIN_SAMPLES_PER_CLASS_TEST} samples in test: "
+                f"Classes with < {min_test} samples in test: "
                 f"{report.classes_with_few_test}"
             )
     except Exception as e:
