@@ -3,13 +3,15 @@
 
 from __future__ import annotations
 
+import json
 import os
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any, Optional
 
 import numpy as np
 
-from src.config import PREPROCESS_PATH, REST_LABEL
+from src.config import PREPROCESS_PATH, QUALITY_REPORTS_DIR, REST_LABEL
 
 # Thresholds for pass/fail and warnings
 MIN_SAMPLES_PER_CLASS_TRAIN = 10
@@ -64,6 +66,10 @@ class QualityReport:
     loaded: bool
     error: Optional[str] = None
 
+    # Report identity
+    report_name: str = "default"
+    thresholds_used: Optional[dict] = None  # resolved thresholds that were applied
+
     # Basic stats (when loaded)
     x_shape: Optional[tuple] = None
     y_shape: Optional[tuple] = None
@@ -109,6 +115,116 @@ class QualityReport:
     warnings: list[str] = field(default_factory=list)
 
 
+def _report_to_dict(report: QualityReport) -> dict[str, Any]:
+    """Convert QualityReport to a JSON-serializable dict."""
+    d = asdict(report)
+    if report.unique_labels is not None:
+        d["unique_labels"] = report.unique_labels.tolist()
+    if d.get("x_shape") is not None:
+        d["x_shape"] = list(d["x_shape"])
+    if d.get("y_shape") is not None:
+        d["y_shape"] = list(d["y_shape"])
+    for key in (
+        "counts_per_class",
+        "train_per_class",
+        "val_per_class",
+        "test_per_class",
+    ):
+        if d.get(key) is not None:
+            d[key] = {str(k): v for k, v in d[key].items()}
+
+    # Ensure no numpy scalars (JSON does not serialize np.int64 etc.)
+    def _to_native(obj: Any) -> Any:
+        if isinstance(obj, (np.integer, np.int64, np.int32)):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float64, np.float32)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, dict):
+            return {k: _to_native(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_to_native(x) for x in obj]
+        return obj
+
+    return _to_native(d)
+
+
+def _report_from_dict(d: dict[str, Any]) -> QualityReport:
+    """Build QualityReport from a dict (e.g. loaded from JSON)."""
+    d = dict(d)
+    for key in (
+        "counts_per_class",
+        "train_per_class",
+        "val_per_class",
+        "test_per_class",
+    ):
+        if d.get(key) is not None:
+            d[key] = {int(k): v for k, v in d[key].items()}
+    if d.get("unique_labels") is not None:
+        d["unique_labels"] = np.array(d["unique_labels"])
+    if d.get("x_shape") is not None:
+        d["x_shape"] = tuple(d["x_shape"])
+    if d.get("y_shape") is not None:
+        d["y_shape"] = tuple(d["y_shape"])
+    return QualityReport(**d)
+
+
+def get_reports_dir() -> Path:
+    """Return the directory for saved quality reports; create if needed."""
+    path = Path(QUALITY_REPORTS_DIR)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _report_filename(dataset_id: str, report_name: str) -> str:
+    """Return the filename for a report given dataset_id and report_name."""
+    safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in report_name)
+    return f"dataset_{dataset_id}_{safe_name}.json"
+
+
+def list_saved_reports() -> list[tuple[str, str, Path]]:
+    """
+    List saved reports: [(dataset_id, report_name, path), ...] sorted by (dataset_id, report_name).
+    Filenames are expected to be dataset_<id>_<name>.json.
+    """
+    reports_dir = get_reports_dir()
+    out = []
+    for f in reports_dir.glob("dataset_*.json"):
+        try:
+            stem = f.stem  # e.g. "dataset_1_default" or "dataset_1_strict"
+            parts = stem.split("_", 2)  # ["dataset", "<id>", "<name>"]
+            if len(parts) < 3:
+                continue
+            dataset_id = parts[1]
+            report_name = parts[2]
+            if dataset_id.isdigit():
+                out.append((dataset_id, report_name, f))
+        except Exception:
+            continue
+    return sorted(out, key=lambda x: (int(x[0]), x[1]))
+
+
+def save_report(report: QualityReport) -> Path:
+    """Save a QualityReport to QUALITY_REPORTS_DIR using dataset_id + report_name. Returns path."""
+    reports_dir = get_reports_dir()
+    filename = _report_filename(report.dataset_id, report.report_name)
+    path = reports_dir / filename
+    with open(path, "w") as f:
+        json.dump(_report_to_dict(report), f, indent=2)
+    return path
+
+
+def load_report(path: Path) -> Optional[QualityReport]:
+    """Load a QualityReport from a JSON file. Returns None on error."""
+    try:
+        with open(path) as f:
+            d = json.load(f)
+        return _report_from_dict(d)
+    except Exception:
+        return None
+
+
 def _stratified_split_indices(
     y: np.ndarray, train_frac: float = 0.7, val_frac: float = 0.15, seed: int = 42
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -139,14 +255,17 @@ def _stratified_split_indices(
 
 
 def check_quality(
-    dataset_id: str, thresholds: Optional[QualityThresholds] = None
+    dataset_id: str,
+    thresholds: Optional[QualityThresholds] = None,
+    report_name: str = "default",
 ) -> QualityReport:
     """
     Run all quality checks on a preprocessed dataset.
     Returns a QualityReport with metrics and pass/fail.
     Optional thresholds override the default min samples and balance ratio.
+    report_name is stored in the report and used as part of the saved filename.
     """
-    report = QualityReport(dataset_id=dataset_id, loaded=False)
+    report = QualityReport(dataset_id=dataset_id, loaded=False, report_name=report_name)
     t = thresholds or QualityThresholds()
     min_train = (
         t.min_samples_train
@@ -168,6 +287,13 @@ def check_quality(
         if t.min_balance_ratio is not None
         else MIN_CLASS_BALANCE_RATIO
     )
+
+    report.thresholds_used = {
+        "min_samples_train": min_train,
+        "min_samples_val": min_val,
+        "min_samples_test": min_test,
+        "min_balance_ratio": min_balance,
+    }
 
     X, y = load_dataset(dataset_id)
     if X is None or y is None:
