@@ -286,7 +286,7 @@ if run_btn:
 # ─────────────────────────────────────────────────────────────────────────────
 # Results
 # ─────────────────────────────────────────────────────────────────────────────
-results: list[ModelComparisonResult] | None = st.session_state.get("mc_results")
+results = st.session_state.get("mc_results")
 cfg: dict = st.session_state.get("mc_config", {})
 
 if results is None:
@@ -368,7 +368,7 @@ best_acc = max((r.accuracy for r in results if r.accuracy is not None), default=
 best_f1 = max((r.macro_f1 for r in results if r.macro_f1 is not None), default=None)
 fastest = min(
     (r for r in results if r.mean_inference_ms is not None),
-    key=lambda r: r.mean_inference_ms,  # type: ignore[arg-type]
+    key=lambda r: r.mean_inference_ms,  # type: ignore[arg-type, return-value]
     default=None,
 )
 
@@ -887,12 +887,13 @@ if models_with_pc:
             expanded=False,
         ):
             pc_rows = []
-            for lbl in sorted(r.per_class_accuracy.keys()):
+            per_class_acc = r.per_class_accuracy or {}
+            for lbl in sorted(per_class_acc.keys()):
                 pc_rows.append(
                     {
                         "Label": lbl,
                         "Gesture": id_to_gesture.get(lbl, f"cls_{lbl}"),
-                        "Accuracy": round(r.per_class_accuracy.get(lbl, 0.0), 4),
+                        "Accuracy": round(per_class_acc.get(lbl, 0.0), 4),
                         "Precision": round((r.per_class_precision or {}).get(lbl, 0.0), 4),
                         "Recall": round((r.per_class_recall or {}).get(lbl, 0.0), 4),
                         "F1": round((r.per_class_f1 or {}).get(lbl, 0.0), 4),
@@ -983,7 +984,7 @@ if models_with_conf:
     # Confidence distribution — faceted histograms
     conf_long = []
     for r in models_with_conf:
-        for c in r.confidence_distribution:
+        for c in r.confidence_distribution or []:
             conf_long.append({"Model": r.name.replace(".keras", ""), "Confidence": c})
     df_conf = pd.DataFrame(conf_long)
 
@@ -1019,10 +1020,11 @@ if models_with_arch:
     st.markdown('<p class="section-title">Architecture</p>', unsafe_allow_html=True)
 
     for r in models_with_arch:
-        n_trainable = sum(lyr["params"] for lyr in r.layer_summary if lyr.get("trainable", True))
+        layer_summary = r.layer_summary or []
+        n_trainable = sum(lyr["params"] for lyr in layer_summary if lyr.get("trainable", True))
         n_frozen = (r.param_count or 0) - n_trainable
         with st.expander(
-            f"🏗️ {r.name.replace('.keras', '')} — {len(r.layer_summary)} layers · "
+            f"🏗️ {r.name.replace('.keras', '')} — {len(layer_summary)} layers · "
             f"{_fmt_params(r.param_count)} total params",
             expanded=False,
         ):

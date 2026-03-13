@@ -216,7 +216,7 @@ def extract_features(emg_windows: np.ndarray, sampling_frequency: int) -> np.nda
     return X
 
 
-def drop_missing_values(data: tuple[np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
+def drop_missing_values(data: tuple[np.ndarray, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
     X, y = data
 
     missing_index = np.where(np.isnan(X))[0]
