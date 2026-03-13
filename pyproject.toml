@@ -57,6 +57,7 @@ exclude = ["tests/", "scripts/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]   # adds project root to sys.path so "from src.x import ..." works
 addopts = "-v --tb=short --cov=src --cov-report=xml:coverage.xml --cov-report=term-missing"
 python_files = ["test_*.py"]
 python_classes = ["Test*"]

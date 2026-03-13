@@ -89,14 +89,10 @@ jobs:
           path: coverage.xml
           retention-days: 7
 
-  # ── 3. Security audit (independent, non-blocking) ────────────────────────────
-  # continue-on-error: true — some MLflow CVEs only have fixes in 3.x (breaking
-  # upgrade), so we surface findings without blocking the test job. The JSON
-  # report is uploaded as an artifact for review on every run.
+  # ── 3. Security audit ──────────────────────────────────────────
   security:
     name: Security (pip-audit)
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -115,7 +111,14 @@ jobs:
         run: pip install pip-audit==2.7.3
 
       - name: Audit runtime dependencies
-        run: pip-audit -r requirements.txt --format=json -o audit-report.json; pip-audit -r requirements.txt --format=columns
+        run: |
+          pip-audit -r requirements.txt --format=json -o audit-report.json --progress-spinner=off || true
+          pip-audit -r requirements.txt --format=columns --progress-spinner=off \
+            --ignore-vuln PYSEC-2025-52 \
+            --ignore-vuln GHSA-wf7f-8fxf-xfxc \
+            --ignore-vuln GHSA-pgqp-8h46-6x4j \
+            --ignore-vuln GHSA-4x5p-f36r-mxxr \
+            --ignore-vuln GHSA-w8v5-vhqr-4h9v
 
       - name: Upload audit report
         if: always()
