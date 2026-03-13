@@ -338,10 +338,14 @@ st.divider()
 
 # Suggested split + per-class table
 if report.train_per_class is not None:
+    # val/test dicts are always populated alongside train_per_class by check_quality()
+    val_per_class = report.val_per_class or {}
+    test_per_class = report.test_per_class or {}
+
     st.subheader("Suggested split (70% / 15% / 15%)")
     t_train = sum(report.train_per_class.values())
-    t_val = sum(report.val_per_class.values())
-    t_test = sum(report.test_per_class.values())
+    t_val = sum(val_per_class.values())
+    t_test = sum(test_per_class.values())
     s1, s2, s3 = st.columns(3)
     s1.metric("Train samples", t_train)
     s2.metric("Val samples", t_val)
@@ -353,8 +357,8 @@ if report.train_per_class is not None:
             {
                 "Movement": label_to_gesture_name(lab),
                 "Train": report.train_per_class[int(lab)],
-                "Val": report.val_per_class[int(lab)],
-                "Test": report.test_per_class[int(lab)],
+                "Val": val_per_class[int(lab)],
+                "Test": test_per_class[int(lab)],
             }
             for lab in sorted(report.train_per_class.keys())
         ]
@@ -435,13 +439,15 @@ with ex2:
         )
 
 if report.train_per_class is not None:
+    _val_pc = report.val_per_class or {}
+    _test_pc = report.test_per_class or {}
     split_export = pd.DataFrame(
         [
             {
                 "movement": label_to_gesture_name(lab),
                 "train": report.train_per_class[int(lab)],
-                "val": report.val_per_class[int(lab)],
-                "test": report.test_per_class[int(lab)],
+                "val": _val_pc[int(lab)],
+                "test": _test_pc[int(lab)],
             }
             for lab in sorted(report.train_per_class.keys())
         ]

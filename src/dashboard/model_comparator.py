@@ -209,8 +209,8 @@ class ModelComparisonResult:
             if f.name not in cleaned:
                 if f.default is not MISSING:
                     cleaned[f.name] = f.default
-                elif f.default_factory is not MISSING:  # type: ignore[misc]
-                    cleaned[f.name] = f.default_factory()  # type: ignore[misc]
+                elif f.default_factory is not MISSING:
+                    cleaned[f.name] = f.default_factory()
                 else:
                     cleaned[f.name] = None
         return cls(**cleaned)
