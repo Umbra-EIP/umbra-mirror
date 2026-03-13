@@ -1,14 +1,21 @@
-pytest
-mlflow
-dvc
-dvc[ssh]
-prefect
-pre-commit
-matplotlib
-seaborn
-numpy
-pandas
-scipy
-tqdm
+# Core ML / DL
 tensorflow==2.19.0
-streamlit
+numpy==1.26.4          # TF 2.19 requires numpy <2.0
+scipy==1.13.1
+
+# Data / ML utilities
+pandas==2.2.3
+scikit-learn==1.5.2
+
+# Experiment tracking & pipeline orchestration
+mlflow==2.19.0
+dvc==3.57.0
+dvc[ssh]==3.57.0
+prefect==3.2.7
+
+# Dashboard
+streamlit==1.41.1
+altair==5.4.1           # required by streamlit
+matplotlib==3.9.4
+seaborn==0.13.2
+tqdm==4.67.1

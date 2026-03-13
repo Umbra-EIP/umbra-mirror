@@ -2,6 +2,7 @@
 
 import argparse
 import os
+
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
@@ -31,9 +32,7 @@ y = y - 1
 
 print(X.shape, y.shape)
 
-X_train, X_val, y_train, y_val = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 num_classes = len(np.unique(y))
 
@@ -48,9 +47,7 @@ model.compile(
 model.summary()
 
 callbacks = [
-    tf.keras.callbacks.EarlyStopping(
-        monitor="val_loss", patience=5, restore_best_weights=True
-    )
+    tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
 ]
 
 model.fit(

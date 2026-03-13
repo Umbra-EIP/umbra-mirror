@@ -1,72 +1,110 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
+    branches: ["main", "develop"]
   pull_request:
-    branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
+    branches: ["main", "develop"]
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# Cancel in-progress runs for the same branch/PR to save minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: 3.13
-      - run: pip install pre-commit
-      - run: pre-commit run --all-files
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  # ── 1. Code quality (fast gate, ~1 min) ─────────────────────────────────────
+  quality:
+    name: Quality (ruff + pre-commit)
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/setup-python@v5
         with:
-          activate-environment: umbra-env
-          auto-activate-base: false
+          python-version: "3.11"
 
-      - name: Create environment from file
-        #Login shell
-        shell: bash -l {0}
-        run: |
-          conda env update --file environment.yml --name umbra-env
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-quality-${{ hashFiles('requirements-dev.txt') }}
 
-      - name: Verify environment
-        shell: bash -l {0}
-        run: |
-          conda info
-          conda list
+      - name: Install quality tools
+        run: pip install ruff==0.9.6 mypy==1.14.1 pre-commit==4.0.1
 
-      - name: Run flake8 (lint)
-        shell: bash -l {0}
-        run: |
-          conda install -y flake8
-          flake8 .
+      - name: Cache pre-commit envs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
 
-      - name: Run black (format check)
-        shell: bash -l {0}
-        run: |
-          conda install -y black
-          black --check .
+      - name: ruff lint
+        run: ruff check src/ tests/ scripts/
 
-      - name: Run tests
-        shell: bash -l {0}
-        run: |
-          pip install pytest
-          python -m pytest tests/ -v
+      - name: ruff format check
+        run: ruff format --check src/ tests/ scripts/
+
+      - name: pre-commit (non-ruff hooks)
+        run: pre-commit run trailing-whitespace end-of-file-fixer check-yaml check-toml check-merge-conflict --all-files
+
+      - name: Type-check (mypy)
+        run: mypy src/
+
+  # ── 2. Tests + coverage (depends on quality) ─────────────────────────────────
+  test:
+    name: Test (pytest + coverage)
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-test-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          restore-keys: pip-test-
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run pytest
+        run: pytest
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 7
+
+  # ── 3. Security audit (independent, ~1 min) ──────────────────────────────────
+  security:
+    name: Security (pip-audit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-audit-${{ hashFiles('requirements.txt') }}
+
+      - name: Install pip-audit
+        run: pip install pip-audit==2.7.3
+
+      - name: Audit runtime dependencies
+        run: pip-audit -r requirements.txt --format=columns

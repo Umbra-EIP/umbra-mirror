@@ -135,9 +135,9 @@ def _report_to_dict(report: QualityReport) -> dict[str, Any]:
 
     # Ensure no numpy scalars (JSON does not serialize np.int64 etc.)
     def _to_native(obj: Any) -> Any:
-        if isinstance(obj, (np.integer, np.int64, np.int32)):
+        if isinstance(obj, np.integer | np.int64 | np.int32):
             return int(obj)
-        if isinstance(obj, (np.floating, np.float64, np.float32)):
+        if isinstance(obj, np.floating | np.float64 | np.float32):
             return float(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -268,24 +268,12 @@ def check_quality(
     report = QualityReport(dataset_id=dataset_id, loaded=False, report_name=report_name)
     t = thresholds or QualityThresholds()
     min_train = (
-        t.min_samples_train
-        if t.min_samples_train is not None
-        else MIN_SAMPLES_PER_CLASS_TRAIN
+        t.min_samples_train if t.min_samples_train is not None else MIN_SAMPLES_PER_CLASS_TRAIN
     )
-    min_val = (
-        t.min_samples_val
-        if t.min_samples_val is not None
-        else MIN_SAMPLES_PER_CLASS_VAL
-    )
-    min_test = (
-        t.min_samples_test
-        if t.min_samples_test is not None
-        else MIN_SAMPLES_PER_CLASS_TEST
-    )
+    min_val = t.min_samples_val if t.min_samples_val is not None else MIN_SAMPLES_PER_CLASS_VAL
+    min_test = t.min_samples_test if t.min_samples_test is not None else MIN_SAMPLES_PER_CLASS_TEST
     min_balance = (
-        t.min_balance_ratio
-        if t.min_balance_ratio is not None
-        else MIN_CLASS_BALANCE_RATIO
+        t.min_balance_ratio if t.min_balance_ratio is not None else MIN_CLASS_BALANCE_RATIO
     )
 
     report.thresholds_used = {
@@ -341,9 +329,7 @@ def check_quality(
     report.counts_per_class = counts
     report.min_count = min(counts.values()) if counts else 0
     report.max_count = max(counts.values()) if counts else 0
-    report.balance_ratio = (
-        report.min_count / report.max_count if report.max_count > 0 else 0.0
-    )
+    report.balance_ratio = report.min_count / report.max_count if report.max_count > 0 else 0.0
 
     if report.balance_ratio < min_balance:
         report.warnings.append(
@@ -360,9 +346,7 @@ def check_quality(
         report.train_per_class = {
             int(lab): int((y_train == lab).sum()) for lab in report.unique_labels
         }
-        report.val_per_class = {
-            int(lab): int((y_val == lab).sum()) for lab in report.unique_labels
-        }
+        report.val_per_class = {int(lab): int((y_val == lab).sum()) for lab in report.unique_labels}
         report.test_per_class = {
             int(lab): int((y_test == lab).sum()) for lab in report.unique_labels
         }
@@ -375,18 +359,15 @@ def check_quality(
                 report.classes_with_few_test.append(int(lab))
         if report.classes_with_few_train:
             report.warnings.append(
-                f"Classes with < {min_train} samples in train: "
-                f"{report.classes_with_few_train}"
+                f"Classes with < {min_train} samples in train: {report.classes_with_few_train}"
             )
         if report.classes_with_few_val:
             report.warnings.append(
-                f"Classes with < {min_val} samples in val: "
-                f"{report.classes_with_few_val}"
+                f"Classes with < {min_val} samples in val: {report.classes_with_few_val}"
             )
         if report.classes_with_few_test:
             report.warnings.append(
-                f"Classes with < {min_test} samples in test: "
-                f"{report.classes_with_few_test}"
+                f"Classes with < {min_test} samples in test: {report.classes_with_few_test}"
             )
     except Exception as e:
         report.warnings.append(f"Split simulation failed: {e}")

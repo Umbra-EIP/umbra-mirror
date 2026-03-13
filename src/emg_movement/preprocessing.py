@@ -1,6 +1,7 @@
 # src/emg_movement/preprocessing.py
 
 import os
+
 import numpy as np
 import pandas as pd
 from scipy import signal
@@ -16,9 +17,7 @@ class EMGPreprocessor:
         self.window_step = window_step
         self.exercise_ids = [1, 2, 3]
 
-        self.sos = signal.butter(
-            N=2, Wn=5, fs=SAMPLING_EMG_RATE, btype="low", output="sos"
-        )
+        self.sos = signal.butter(N=2, Wn=5, fs=SAMPLING_EMG_RATE, btype="low", output="sos")
 
     def preprocess(self):
         subjects = self._load_subjects()
