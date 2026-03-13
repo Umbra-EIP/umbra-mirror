@@ -7,16 +7,16 @@ _root = Path(__file__).resolve().parents[2]
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
+import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
 import tensorflow as tf
-import altair as alt
 
 from src.config import MODEL_DIR, PREPROCESS_PATH
 from src.emg_movement.gestures import ALL_GESTURES
 
-id_to_gesture = {i: g for i, g in enumerate(ALL_GESTURES)}
+id_to_gesture = dict(enumerate(ALL_GESTURES))
 
 for key in ["emg_data", "labels", "model"]:
     if key not in st.session_state:
@@ -139,9 +139,7 @@ if st.button("Run Inference") and emg_data is not None and model is not None:
         st.altair_chart(chart, use_container_width=True)
 
         st.subheader("🔹 Confidence Distribution")
-        conf_df = (
-            df_pred.groupby("Predicted Gesture")["Confidence"].mean().reset_index()
-        )
+        conf_df = df_pred.groupby("Predicted Gesture")["Confidence"].mean().reset_index()
 
         chart_conf = (
             alt.Chart(conf_df)

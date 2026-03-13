@@ -8,10 +8,11 @@ import math
 import os
 import sys
 import time
-from dataclasses import dataclass, field, fields, MISSING
+from collections.abc import Callable
+from dataclasses import MISSING, dataclass, field, fields
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional
 
 import numpy as np
 
@@ -19,7 +20,7 @@ _root = Path(__file__).resolve().parents[2]
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-from src.config import MODEL_DIR, PREPROCESS_PATH, COMPARISON_REPORTS_DIR
+from src.config import COMPARISON_REPORTS_DIR, MODEL_DIR, PREPROCESS_PATH
 
 # Theoretical random-chance loss for 52 classes: ln(52) ≈ 3.95
 _RANDOM_LOSS_52 = 3.951
@@ -81,14 +82,12 @@ def _get_model_input_shape(model) -> Optional[tuple]:
         return None
 
 
-def _shapes_compatible(
-    model_shape: Optional[tuple], data_shape: tuple
-) -> Optional[bool]:
+def _shapes_compatible(model_shape: Optional[tuple], data_shape: tuple) -> Optional[bool]:
     if model_shape is None:
         return None
     if len(model_shape) != len(data_shape):
         return False
-    return all(m == -1 or m == d for m, d in zip(model_shape, data_shape))
+    return all(m == -1 or m == d for m, d in zip(model_shape, data_shape, strict=False))
 
 
 def _topk_accuracy(y_true: np.ndarray, y_pred_probs: np.ndarray, k: int) -> float:
@@ -97,9 +96,7 @@ def _topk_accuracy(y_true: np.ndarray, y_pred_probs: np.ndarray, k: int) -> floa
     return float(np.mean([y_true[i] in top_k[i] for i in range(len(y_true))]))
 
 
-def _per_class_metrics(
-    y_true: np.ndarray, y_pred: np.ndarray, labels: list[int]
-) -> dict:
+def _per_class_metrics(y_true: np.ndarray, y_pred: np.ndarray, labels: list[int]) -> dict:
     """Compute per-class precision, recall, F1 without sklearn."""
     prec_d: dict[int, float] = {}
     rec_d: dict[int, float] = {}
@@ -122,7 +119,7 @@ def _compute_confusion_matrix(
     idx_map = {lbl: i for i, lbl in enumerate(labels)}
     n = len(labels)
     cm = [[0] * n for _ in range(n)]
-    for true, pred in zip(y_true.tolist(), y_pred.tolist()):
+    for true, pred in zip(y_true.tolist(), y_pred.tolist(), strict=False):
         if true in idx_map and pred in idx_map:
             cm[idx_map[true]][idx_map[pred]] += 1
     return cm
@@ -192,7 +189,7 @@ class ModelComparisonResult:
     broken_reasons: list = field(default_factory=list)
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ModelComparisonResult":
+    def from_dict(cls, d: dict) -> ModelComparisonResult:
         """Reconstruct from a JSON-loaded dict (handles key/type conversions)."""
         d = dict(d)  # shallow copy to avoid mutating caller's data
         for fld in [
@@ -212,8 +209,8 @@ class ModelComparisonResult:
             if f.name not in cleaned:
                 if f.default is not MISSING:
                     cleaned[f.name] = f.default
-                elif f.default_factory is not MISSING:  # type: ignore[misc]
-                    cleaned[f.name] = f.default_factory()  # type: ignore[misc]
+                elif f.default_factory is not MISSING:
+                    cleaned[f.name] = f.default_factory()
                 else:
                     cleaned[f.name] = None
         return cls(**cleaned)
@@ -435,9 +432,7 @@ def run_model_comparison(
 
         try:
             loss_val: Optional[float] = float(
-                tf.keras.losses.sparse_categorical_crossentropy(y, y_pred_probs)
-                .numpy()
-                .mean()
+                tf.keras.losses.sparse_categorical_crossentropy(y, y_pred_probs).numpy().mean()
             )
         except Exception:
             loss_val = float("nan")
@@ -483,9 +478,7 @@ def run_model_comparison(
         if loss_val is not None and math.isnan(loss_val):
             broken.append("NaN loss")
         elif loss_val is not None and loss_val > _BROKEN_LOSS_THRESHOLD:
-            broken.append(
-                f"Loss too high ({loss_val:.2f}; random ≈ {_RANDOM_LOSS_52:.2f})"
-            )
+            broken.append(f"Loss too high ({loss_val:.2f}; random ≈ {_RANDOM_LOSS_52:.2f})")
         if accuracy < _BROKEN_ACCURACY_THRESHOLD:
             broken.append(f"Near-zero accuracy ({accuracy * 100:.1f} %)")
 

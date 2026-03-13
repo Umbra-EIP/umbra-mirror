@@ -1,10 +1,10 @@
+import os
+import zipfile
+
 import numpy as np
 import pandas as pd
-
-import zipfile
-import os
-from tqdm import tqdm
 import scipy.io as sio
+from tqdm import tqdm
 
 
 def unzip_and_remove(zip_folder: str) -> None:
@@ -20,16 +20,10 @@ def unzip_and_remove(zip_folder: str) -> None:
         os.remove(zip_path)
 
 
-def parse_exercise_data(
-    datapath: str, subject_ids: list, exercise_id: int
-) -> np.ndarray:
+def parse_exercise_data(datapath: str, subject_ids: list, exercise_id: int) -> np.ndarray:
     all_data = []
-    for subject_id in tqdm(
-        subject_ids, desc=f"Loading data for exercise {exercise_id}"
-    ):
-        filepath = os.path.join(
-            datapath, f"s{subject_id}", f"S{subject_id}_A1_E{exercise_id}.mat"
-        )
+    for subject_id in tqdm(subject_ids, desc=f"Loading data for exercise {exercise_id}"):
+        filepath = os.path.join(datapath, f"s{subject_id}", f"S{subject_id}_A1_E{exercise_id}.mat")
         data = sio.loadmat(filepath)
 
         emg, stimulus, repetition, subject_id_arr = (
@@ -63,9 +57,7 @@ def train_val_test_split(df: pd.DataFrame, val: list, test: list) -> pd.DataFram
     return df
 
 
-def extract_trial_windows(
-    emg: np.ndarray, df: pd.DataFrame
-) -> tuple[np.ndarray, np.ndarray]:
+def extract_trial_windows(emg: np.ndarray, df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     labels = df["Stimulus"].values
     repetitions = df["Repetition"].values
 
@@ -74,7 +66,7 @@ def extract_trial_windows(
     window_ids = []
 
     curr_id = 0
-    for y, rep in zip(labels, repetitions):
+    for y, rep in zip(labels, repetitions, strict=False):
         if curr_stim is None:
             curr_rep, curr_stim = rep, y
 
@@ -142,9 +134,7 @@ def extract_time_windows(
     return emg_windows, np.array(labels_windows, dtype=int)
 
 
-def calc_fft_power(
-    emg_windows: np.array, sampling_frequency: int
-) -> tuple[np.array, np.array]:
+def calc_fft_power(emg_windows: np.array, sampling_frequency: int) -> tuple[np.array, np.array]:
     N = emg_windows.shape[1]
 
     freqs = np.fft.rfftfreq(N, 1 / sampling_frequency)
@@ -156,9 +146,7 @@ def calc_fft_power(
     return freqs[1:], fft_power[:, 1:, :]
 
 
-def downsample_rest_windows(
-    data: tuple[np.ndarray, np.ndarray]
-) -> tuple[np.ndarray, np.ndarray]:
+def downsample_rest_windows(data: tuple[np.ndarray, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
     X, y = data
 
     _, count = np.unique(y, return_counts=True)
@@ -189,9 +177,7 @@ def extract_features(emg_windows: np.ndarray, sampling_frequency: int) -> np.nda
 
     wl = np.sum(np.abs(np.diff(emg_windows, axis=1)), axis=1)
 
-    freqs, fft_power = calc_fft_power(
-        emg_windows, sampling_frequency=sampling_frequency
-    )
+    freqs, fft_power = calc_fft_power(emg_windows, sampling_frequency=sampling_frequency)
 
     mean_power = np.mean(fft_power, axis=1)
 
@@ -230,7 +216,7 @@ def extract_features(emg_windows: np.ndarray, sampling_frequency: int) -> np.nda
     return X
 
 
-def drop_missing_values(data: tuple[np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
+def drop_missing_values(data: tuple[np.ndarray, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
     X, y = data
 
     missing_index = np.where(np.isnan(X))[0]

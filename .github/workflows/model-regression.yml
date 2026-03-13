@@ -1,0 +1,76 @@
+name: Model Regression
+
+# Manually triggered or scheduled to ensure trained models never regress
+# below an acceptable accuracy threshold on the held-out test split.
+#
+# Prerequisites (GitHub Secrets):
+#   DVC_SSH_KEY  — private SSH key for the DVC remote at 157.250.207.123
+#                  If absent the data-pull step is skipped gracefully.
+#
+# The regression_check.py script also skips gracefully when the model
+# or data files are missing (exits 0), so the job never fails spuriously.
+on:
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: "Model filename under src/models/"
+        required: false
+        default: "cnn_lstm_emg_v3.keras"
+      dataset_id:
+        description: "Preprocessed dataset ID (e.g. 1)"
+        required: false
+        default: "1"
+      threshold:
+        description: "Minimum accuracy to pass (0–1)"
+        required: false
+        default: "0.80"
+
+  # Run every Monday at 03:00 UTC against the default model/dataset
+  schedule:
+    - cron: "0 3 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Accuracy regression check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      # ── Optional: pull preprocessed data from DVC remote ─────────────────
+      # Skipped silently when DVC_SSH_KEY secret is not configured.
+      - name: Set up SSH for DVC remote
+        if: ${{ env.DVC_SSH_KEY != '' }}
+        env:
+          DVC_SSH_KEY: ${{ secrets.DVC_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DVC_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 157.250.207.123 >> ~/.ssh/known_hosts
+
+      - name: Pull preprocessed data via DVC
+        if: ${{ env.DVC_SSH_KEY != '' }}
+        env:
+          DVC_SSH_KEY: ${{ secrets.DVC_SSH_KEY }}
+        run: dvc pull data/preprocessed/${{ inputs.dataset_id || '1' }}
+
+      # ── Regression check ─────────────────────────────────────────────────
+      - name: Run regression check
+        run: |
+          python scripts/regression_check.py \
+            --model "src/models/${{ inputs.model_name || 'cnn_lstm_emg_v3.keras' }}" \
+            --data-dir "data/preprocessed/${{ inputs.dataset_id || '1' }}" \
+            --threshold "${{ inputs.threshold || '0.80' }}"
