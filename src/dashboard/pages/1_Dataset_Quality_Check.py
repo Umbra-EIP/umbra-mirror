@@ -2,29 +2,29 @@
 
 import os
 import sys
-from pathlib import Path
 from io import StringIO
+from pathlib import Path
 
 _root = Path(__file__).resolve().parents[3]
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-import streamlit as st
-import pandas as pd
 import altair as alt
+import pandas as pd
+import streamlit as st
 
 from src.config import PREPROCESS_PATH
 from src.dashboard.dataset_quality import (
-    get_available_datasets,
-    check_quality,
-    QualityThresholds,
-    save_report,
-    load_report,
-    list_saved_reports,
+    MIN_CLASS_BALANCE_RATIO,
+    MIN_SAMPLES_PER_CLASS_TEST,
     MIN_SAMPLES_PER_CLASS_TRAIN,
     MIN_SAMPLES_PER_CLASS_VAL,
-    MIN_SAMPLES_PER_CLASS_TEST,
-    MIN_CLASS_BALANCE_RATIO,
+    QualityThresholds,
+    check_quality,
+    get_available_datasets,
+    list_saved_reports,
+    load_report,
+    save_report,
 )
 from src.emg_movement.gestures import label_to_gesture_name
 
@@ -78,9 +78,11 @@ selected = st.sidebar.selectbox(
 )
 
 # Clear report when user switches to a different dataset
-if st.session_state.get("quality_report") is not None:
-    if st.session_state["quality_report"].dataset_id != selected:
-        st.session_state["quality_report"] = None
+if (
+    st.session_state.get("quality_report") is not None
+    and st.session_state["quality_report"].dataset_id != selected
+):
+    st.session_state["quality_report"] = None
 
 st.sidebar.divider()
 st.sidebar.subheader("Thresholds")
@@ -124,9 +126,7 @@ thresholds = QualityThresholds(
 
 st.sidebar.divider()
 st.sidebar.subheader("Report name")
-st.sidebar.caption(
-    "Give this report a name to save it separately (e.g. 'strict', 'loose')."
-)
+st.sidebar.caption("Give this report a name to save it separately (e.g. 'strict', 'loose').")
 report_name = st.sidebar.text_input(
     "Report name",
     value="default",
@@ -224,20 +224,12 @@ else:
 if report.warnings:
     st.markdown("**Warnings**")
     for w in report.warnings:
-        if (
-            "samples in train:" in w
-            or "samples in val:" in w
-            or "samples in test:" in w
-        ):
+        if "samples in train:" in w or "samples in val:" in w or "samples in test:" in w:
             continue
         st.markdown(f"- {w}")
 
     # Under-represented movements (with actual names)
-    if (
-        report.classes_with_few_train
-        or report.classes_with_few_val
-        or report.classes_with_few_test
-    ):
+    if report.classes_with_few_train or report.classes_with_few_val or report.classes_with_few_test:
         st.markdown("**Under-represented movements**")
         if report.classes_with_few_train:
             names = [label_to_gesture_name(c) for c in report.classes_with_few_train]
@@ -332,9 +324,7 @@ if report.counts_per_class:
         alt.Chart(df_counts)
         .mark_bar()
         .encode(
-            x=alt.X(
-                "movement:N", title="Movement", sort="-y", axis=alt.Axis(labelAngle=90)
-            ),
+            x=alt.X("movement:N", title="Movement", sort="-y", axis=alt.Axis(labelAngle=90)),
             y=alt.Y("count:Q", title="Count"),
             tooltip=["movement", "label", "count"],
         )
@@ -390,9 +380,7 @@ st.divider()
 # Export
 st.subheader("Export report")
 buf = StringIO()
-buf.write(
-    f"Dataset Quality Report — dataset_id={report.dataset_id} — name={report.report_name}\n"
-)
+buf.write(f"Dataset Quality Report — dataset_id={report.dataset_id} — name={report.report_name}\n")
 buf.write("=" * 50 + "\n")
 buf.write(f"Verdict: {'PASS' if report.passed else 'FAIL'}\n")
 if report.thresholds_used:

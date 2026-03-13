@@ -1,6 +1,5 @@
 # src/emg_movement/model.py
 
-import tensorflow as tf
 from tensorflow.keras import layers, models
 
 

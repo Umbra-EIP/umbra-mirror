@@ -1,5 +1,5 @@
 """Test that the EMG → movement model builds correctly."""
-import pytest
+
 from src.emg_movement.model import build_cnn_lstm
 
 

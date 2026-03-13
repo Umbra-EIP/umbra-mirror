@@ -12,10 +12,10 @@ _root = Path(__file__).resolve().parents[3]
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
+import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
-import altair as alt
 
 from src.config import PREPROCESS_PATH
 from src.dashboard.dataset_quality import get_available_datasets
@@ -29,7 +29,7 @@ from src.dashboard.model_comparator import (
 )
 from src.emg_movement.gestures import ALL_GESTURES
 
-id_to_gesture = {i: g for i, g in enumerate(ALL_GESTURES)}
+id_to_gesture = dict(enumerate(ALL_GESTURES))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Page config
@@ -155,9 +155,7 @@ available_datasets: list[str] = []
 if os.path.isdir(PREPROCESS_PATH):
     available_datasets = get_available_datasets()
 
-use_dataset: bool = st.sidebar.toggle(
-    "Evaluate on dataset", value=bool(available_datasets)
-)
+use_dataset: bool = st.sidebar.toggle("Evaluate on dataset", value=bool(available_datasets))
 selected_dataset: str | None = None
 
 if use_dataset:
@@ -276,8 +274,7 @@ if run_btn:
     # Auto-save prompt in sidebar
     with st.sidebar.expander("Save this comparison", expanded=False):
         save_name = (
-            st.text_input("Name", value="default", key="mc_save_name_input").strip()
-            or "default"
+            st.text_input("Name", value="default", key="mc_save_name_input").strip() or "default"
         )
         if st.button("Save", key="mc_save_btn"):
             try:
@@ -350,7 +347,7 @@ def _short_gesture(label: int, maxlen: int = 18) -> str:
     return name[:maxlen] + ("…" if len(name) > maxlen else "")
 
 
-_bar_props = dict(cornerRadiusTopLeft=5, cornerRadiusTopRight=5)
+_bar_props = {"cornerRadiusTopLeft": 5, "cornerRadiusTopRight": 5}
 
 
 def _label_layer(base: alt.Chart, field_name: str, fmt: str) -> alt.LayerChart:
@@ -561,9 +558,7 @@ with tab_topk:
                 ("Top-5", r.top5_accuracy),
             ]:
                 if val is not None:
-                    topk_rows.append(
-                        {"Model": ml, "K": k_label, "Accuracy (%)": val * 100}
-                    )
+                    topk_rows.append({"Model": ml, "K": k_label, "Accuracy (%)": val * 100})
         df_topk = pd.DataFrame(topk_rows)
         chart_topk = (
             alt.Chart(df_topk)
@@ -651,9 +646,7 @@ with tab_size:
             )
             .properties(height=320)
         )
-        st.altair_chart(
-            _label_layer(base_s, "Size (MB)", ".2f"), use_container_width=True
-        )
+        st.altair_chart(_label_layer(base_s, "Size (MB)", ".2f"), use_container_width=True)
     with sp2:
         df_params = df_chart.dropna(subset=["Parameters (M)"])
         if not df_params.empty:
@@ -661,18 +654,14 @@ with tab_size:
                 alt.Chart(df_params)
                 .mark_bar(**_bar_props)
                 .encode(
-                    x=alt.X(
-                        "Model:N", sort="-y", axis=alt.Axis(labelAngle=-15), title=None
-                    ),
+                    x=alt.X("Model:N", sort="-y", axis=alt.Axis(labelAngle=-15), title=None),
                     y=alt.Y("Parameters (M):Q", title="Parameters (M)"),
                     color=alt.Color("Model:N", legend=None),
                     tooltip=["Model", alt.Tooltip("Parameters (M):Q", format=".3f")],
                 )
                 .properties(height=320)
             )
-            st.altair_chart(
-                _label_layer(base_p, "Parameters (M)", ".3f"), use_container_width=True
-            )
+            st.altair_chart(_label_layer(base_p, "Parameters (M)", ".3f"), use_container_width=True)
     st.caption("Smaller models are preferable for on-device / real-time deployment.")
 
 # ── Confusion Matrix tab ──────────────────────────────────────────────────
@@ -698,9 +687,7 @@ with tab_cm:
                             "True": _short_gesture(true_lbl),
                             "Predicted": _short_gesture(pred_lbl),
                             "True (full)": id_to_gesture.get(true_lbl, str(true_lbl)),
-                            "Predicted (full)": id_to_gesture.get(
-                                pred_lbl, str(pred_lbl)
-                            ),
+                            "Predicted (full)": id_to_gesture.get(pred_lbl, str(pred_lbl)),
                             "Count": int(cm_arr[i][j]),
                         }
                     )
@@ -713,13 +700,13 @@ with tab_cm:
                 .encode(
                     x=alt.X(
                         "Predicted:N",
-                        sort=[_short_gesture(l) for l in labels],
+                        sort=[_short_gesture(lbl) for lbl in labels],
                         axis=alt.Axis(labelAngle=90, labelFontSize=9, labelLimit=140),
                         title="Predicted",
                     ),
                     y=alt.Y(
                         "True:N",
-                        sort=[_short_gesture(l) for l in labels],
+                        sort=[_short_gesture(lbl) for lbl in labels],
                         axis=alt.Axis(labelFontSize=9, labelLimit=140),
                         title="True",
                     ),
@@ -747,8 +734,8 @@ with tab_cm:
             m_a, m_b = models_with_cm[0], models_with_cm[1]
             st.markdown(
                 f"**Δ Confusion matrix** — "
-                f"{m_a.name.replace('.keras','')} minus "
-                f"{m_b.name.replace('.keras','')}"
+                f"{m_a.name.replace('.keras', '')} minus "
+                f"{m_b.name.replace('.keras', '')}"
             )
             labels = m_a.class_labels or []
             cm_diff = np.array(m_a.confusion_matrix) - np.array(m_b.confusion_matrix)
@@ -774,13 +761,13 @@ with tab_cm:
                 .encode(
                     x=alt.X(
                         "Predicted:N",
-                        sort=[_short_gesture(l) for l in labels],
+                        sort=[_short_gesture(lbl) for lbl in labels],
                         axis=alt.Axis(labelAngle=90, labelFontSize=9, labelLimit=140),
                         title="Predicted",
                     ),
                     y=alt.Y(
                         "True:N",
-                        sort=[_short_gesture(l) for l in labels],
+                        sort=[_short_gesture(lbl) for lbl in labels],
                         axis=alt.Axis(labelFontSize=9, labelLimit=140),
                         title="True",
                     ),
@@ -802,8 +789,8 @@ with tab_cm:
             )
             st.altair_chart(chart_diff, use_container_width=True)
             st.caption(
-                f"Blue = {m_a.name.replace('.keras','')} predicts more in that cell. "
-                f"Orange = {m_b.name.replace('.keras','')} predicts more. "
+                f"Blue = {m_a.name.replace('.keras', '')} predicts more in that cell. "
+                f"Orange = {m_b.name.replace('.keras', '')} predicts more. "
                 "On the diagonal: blue = model A more correct for that gesture."
             )
 
@@ -846,7 +833,7 @@ for i, r in enumerate(sorted_results):
 
         card = (
             f'<div class="health-card {card_cls}">'
-            f'<div class="health-model-name">{html.escape(r.name.replace(".keras",""))}</div>'
+            f'<div class="health-model-name">{html.escape(r.name.replace(".keras", ""))}</div>'
             f'<span class="badge {badge_cls}">{badge_txt}</span>'
         )
 
@@ -854,17 +841,15 @@ for i, r in enumerate(sorted_results):
             for reason in r.broken_reasons:
                 card += f'<div class="broken-reason">• {html.escape(reason)}</div>'
         elif not r.loaded and r.load_error:
-            card += (
-                f'<div class="broken-reason">{html.escape(r.load_error[:120])}</div>'
-            )
+            card += f'<div class="broken-reason">{html.escape(r.load_error[:120])}</div>'
         elif r.accuracy is not None:
             card += (
                 f'<div style="font-size:0.78rem;color:#94a3b8;margin-top:0.45rem;">'
-                f'Accuracy <strong style="color:#e2e8f0">{r.accuracy*100:.1f}%</strong>'
+                f'Accuracy <strong style="color:#e2e8f0">{r.accuracy * 100:.1f}%</strong>'
                 f" &nbsp;·&nbsp; "
-                f'F1 <strong style="color:#e2e8f0">{r.macro_f1*100:.1f}%</strong>'
+                f'F1 <strong style="color:#e2e8f0">{r.macro_f1 * 100:.1f}%</strong>'
                 if r.macro_f1 is not None
-                else f'Accuracy <strong style="color:#e2e8f0">{r.accuracy*100:.1f}%</strong>'
+                else f'Accuracy <strong style="color:#e2e8f0">{r.accuracy * 100:.1f}%</strong>'
                 f"</div>"
             )
             card += "</div>"  # close the inner div
@@ -893,16 +878,12 @@ models_with_pc = [r for r in sorted_results if r.per_class_accuracy]
 
 if models_with_pc:
     st.divider()
-    st.markdown(
-        '<p class="section-title">Per-class Metrics</p>', unsafe_allow_html=True
-    )
+    st.markdown('<p class="section-title">Per-class Metrics</p>', unsafe_allow_html=True)
 
     for r in models_with_pc:
-        macro_f1_str = (
-            f"  ·  Macro F1: {r.macro_f1*100:.1f}%" if r.macro_f1 is not None else ""
-        )
+        macro_f1_str = f"  ·  Macro F1: {r.macro_f1 * 100:.1f}%" if r.macro_f1 is not None else ""
         with st.expander(
-            f"📋 {r.name.replace('.keras','')} — per-gesture breakdown{macro_f1_str}",
+            f"📋 {r.name.replace('.keras', '')} — per-gesture breakdown{macro_f1_str}",
             expanded=False,
         ):
             pc_rows = []
@@ -912,9 +893,7 @@ if models_with_pc:
                         "Label": lbl,
                         "Gesture": id_to_gesture.get(lbl, f"cls_{lbl}"),
                         "Accuracy": round(r.per_class_accuracy.get(lbl, 0.0), 4),
-                        "Precision": round(
-                            (r.per_class_precision or {}).get(lbl, 0.0), 4
-                        ),
+                        "Precision": round((r.per_class_precision or {}).get(lbl, 0.0), 4),
                         "Recall": round((r.per_class_recall or {}).get(lbl, 0.0), 4),
                         "F1": round((r.per_class_f1 or {}).get(lbl, 0.0), 4),
                     }
@@ -946,9 +925,7 @@ if models_with_pc:
                         alt.Tooltip("F1:Q", format=".3f"),
                     ],
                 )
-                .properties(
-                    height=280, title="F1 Score per gesture (sorted, green=high)"
-                )
+                .properties(height=280, title="F1 Score per gesture (sorted, green=high)")
             )
             st.altair_chart(chart_f1, use_container_width=True)
 
@@ -984,9 +961,7 @@ models_with_conf = [r for r in sorted_results if r.confidence_distribution]
 
 if models_with_conf:
     st.divider()
-    st.markdown(
-        '<p class="section-title">Confidence & Entropy</p>', unsafe_allow_html=True
-    )
+    st.markdown('<p class="section-title">Confidence & Entropy</p>', unsafe_allow_html=True)
     st.caption(
         "**Confidence** = max(softmax) per prediction (higher = more decisive). "
         "**Entropy** = uncertainty of the full probability distribution "
@@ -995,16 +970,12 @@ if models_with_conf:
 
     # Summary metrics row
     conf_cols = st.columns(len(models_with_conf))
-    for col, r in zip(conf_cols, models_with_conf):
+    for col, r in zip(conf_cols, models_with_conf, strict=False):
         model_lbl = r.name.replace(".keras", "")
         col.metric(
             model_lbl,
-            f"conf {r.mean_confidence*100:.1f}%"
-            if r.mean_confidence is not None
-            else "—",
-            delta=f"entropy {r.mean_entropy:.3f}"
-            if r.mean_entropy is not None
-            else None,
+            f"conf {r.mean_confidence * 100:.1f}%" if r.mean_confidence is not None else "—",
+            delta=f"entropy {r.mean_entropy:.3f}" if r.mean_entropy is not None else None,
             delta_color="inverse",
             help="Mean max-softmax confidence · Mean entropy (lower entropy = more confident)",
         )
@@ -1048,12 +1019,10 @@ if models_with_arch:
     st.markdown('<p class="section-title">Architecture</p>', unsafe_allow_html=True)
 
     for r in models_with_arch:
-        n_trainable = sum(
-            l["params"] for l in r.layer_summary if l.get("trainable", True)
-        )
+        n_trainable = sum(lyr["params"] for lyr in r.layer_summary if lyr.get("trainable", True))
         n_frozen = (r.param_count or 0) - n_trainable
         with st.expander(
-            f"🏗️ {r.name.replace('.keras','')} — {len(r.layer_summary)} layers · "
+            f"🏗️ {r.name.replace('.keras', '')} — {len(r.layer_summary)} layers · "
             f"{_fmt_params(r.param_count)} total params",
             expanded=False,
         ):
@@ -1090,27 +1059,15 @@ export_rows = [
         "file_modified": r.file_modified,
         "param_count": r.param_count,
         "model_input_shape": str(r.model_input_shape) if r.model_input_shape else None,
-        "dataset_input_shape": str(r.dataset_input_shape)
-        if r.dataset_input_shape
-        else None,
+        "dataset_input_shape": str(r.dataset_input_shape) if r.dataset_input_shape else None,
         "shape_compatible": r.shape_compatible,
         "accuracy": round(r.accuracy, 6) if r.accuracy is not None else None,
-        "top3_accuracy": round(r.top3_accuracy, 6)
-        if r.top3_accuracy is not None
-        else None,
-        "top5_accuracy": round(r.top5_accuracy, 6)
-        if r.top5_accuracy is not None
-        else None,
-        "loss": round(r.loss, 6)
-        if r.loss is not None and not math.isnan(r.loss)
-        else r.loss,
+        "top3_accuracy": round(r.top3_accuracy, 6) if r.top3_accuracy is not None else None,
+        "top5_accuracy": round(r.top5_accuracy, 6) if r.top5_accuracy is not None else None,
+        "loss": round(r.loss, 6) if r.loss is not None and not math.isnan(r.loss) else r.loss,
         "macro_f1": round(r.macro_f1, 6) if r.macro_f1 is not None else None,
-        "mean_confidence": round(r.mean_confidence, 6)
-        if r.mean_confidence is not None
-        else None,
-        "mean_entropy": round(r.mean_entropy, 6)
-        if r.mean_entropy is not None
-        else None,
+        "mean_confidence": round(r.mean_confidence, 6) if r.mean_confidence is not None else None,
+        "mean_entropy": round(r.mean_entropy, 6) if r.mean_entropy is not None else None,
         "mean_inference_ms": round(r.mean_inference_ms, 3)
         if r.mean_inference_ms is not None
         else None,

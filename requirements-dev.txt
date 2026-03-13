@@ -1,0 +1,13 @@
+# Testing
+pytest==8.3.5
+pytest-cov==6.0.0
+
+# Linting & formatting
+ruff==0.9.6
+mypy==1.14.1
+
+# Security audit
+pip-audit==2.7.3
+
+# Git hooks
+pre-commit==4.0.1

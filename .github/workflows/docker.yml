@@ -1,0 +1,44 @@
+name: Docker
+
+# Validates that the Docker image builds successfully.
+# Runs only when image-relevant files change to avoid unnecessary builds.
+# Does not push to any registry — purely a build gate.
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Dockerfile"
+      - "requirements.txt"
+      - "src/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "Dockerfile"
+      - "requirements.txt"
+      - "src/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: umbra:${{ github.sha }}
+          # GitHub Actions cache keeps layer builds fast across runs
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
