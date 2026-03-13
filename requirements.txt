@@ -19,6 +19,3 @@ altair==5.4.1           # required by streamlit
 matplotlib==3.9.4
 seaborn==0.13.2
 tqdm==4.67.1
-
-# Pinned transitive deps with known CVEs that have upstream fixes
-pillow==12.1.1          # GHSA-cfh3-3jmp-rvhc (fixed in 12.1.1)
