@@ -11,6 +11,7 @@ MODEL_DIR = "src/models"
 
 QUALITY_REPORTS_DIR = "data/quality_reports"
 COMPARISON_REPORTS_DIR = "data/comparison_reports"
+HARDWARE_REPORTS_DIR = "data/hardware_reports"
 
 WINDOW_MS = 500
 WINDOW_SAMPLES = int(FS * WINDOW_MS / 1000)
