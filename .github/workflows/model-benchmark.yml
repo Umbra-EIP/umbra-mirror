@@ -1,0 +1,134 @@
+name: Model Benchmark
+
+# Automatically benchmarks all models whenever a new .keras file is pushed to
+# main, or when a DVC data pointer (*.dvc) changes (indicating new training
+# data was published).
+#
+# What it does:
+#   1. Optionally pulls the preprocessed dataset from the DVC remote.
+#   2. Runs run_comparison.py — evaluates all models, records accuracy, F1,
+#      latency, size, and parameter count.
+#   3. Saves a JSON report to data/comparison_reports/ (loadable from the
+#      Model Comparator dashboard page) and appends a row to ci_history.csv.
+#   4. Posts a Markdown summary table directly in the GitHub Actions job UI.
+#   5. Uploads report + history as a downloadable artifact (90-day retention).
+#   6. Commits the updated reports back to main so the dashboard always has
+#      the latest results without any manual steps.
+#
+# Prerequisites (GitHub Secrets):
+#   DVC_SSH_KEY  — private SSH key for the DVC remote at 157.250.207.123.
+#                  If the secret is absent, the DVC pull step is skipped
+#                  gracefully and the run proceeds without real data
+#                  (metadata-only mode).
+#
+# The commit-back step uses [skip ci] in the message to prevent an infinite
+# trigger loop.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      # New or updated model file committed to the repo
+      - "src/models/**.keras"
+      # DVC data pointer changed — new dataset was published via `dvc push`
+      # and the pointer file was committed. Requires `dvc push + git push`.
+      - "data/**.dvc"
+
+  # Allow manual runs with custom parameters (e.g. after re-training locally)
+  workflow_dispatch:
+    inputs:
+      dataset_id:
+        description: "Preprocessed dataset ID (e.g. 1)"
+        required: false
+        default: "1"
+      n_windows:
+        description: "Dataset windows to evaluate per model"
+        required: false
+        default: "500"
+      n_timing:
+        description: "Latency timing calls per model"
+        required: false
+        default: "30"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Benchmark all models
+    runs-on: ubuntu-latest
+
+    # write permission required to commit the report back to the repo
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history needed so the bot commit has the correct parent
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      # ── Optional: pull preprocessed data from DVC remote ───────────────────
+      # Skipped silently when DVC_SSH_KEY secret is not configured.
+      - name: Set up SSH for DVC remote
+        if: ${{ env.DVC_SSH_KEY != '' }}
+        env:
+          DVC_SSH_KEY: ${{ secrets.DVC_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DVC_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 157.250.207.123 >> ~/.ssh/known_hosts
+
+      - name: Pull preprocessed data via DVC
+        if: ${{ env.DVC_SSH_KEY != '' }}
+        env:
+          DVC_SSH_KEY: ${{ secrets.DVC_SSH_KEY }}
+        run: |
+          dvc pull data/preprocessed/${{ inputs.dataset_id || '1' }}
+
+      # ── Run benchmark ───────────────────────────────────────────────────────
+      - name: Run model benchmark
+        run: |
+          python scripts/run_comparison.py \
+            --dataset-id "${{ inputs.dataset_id || '1' }}" \
+            --n-windows  "${{ inputs.n_windows  || '500' }}" \
+            --n-timing   "${{ inputs.n_timing   || '30'  }}" \
+            --output-dir data/comparison_reports
+
+      # ── Upload report and history as a downloadable artifact ───────────────
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-benchmark-${{ github.sha }}
+          path: |
+            data/comparison_reports/comparison_*.json
+            data/comparison_reports/ci_history.csv
+          retention-days: 90
+
+      # ── Commit results back to main ─────────────────────────────────────────
+      # The dashboard reads from data/comparison_reports/ at runtime, so
+      # committing the reports here makes CI results immediately available in
+      # the Model Comparator page without any extra setup.
+      #
+      # [skip ci] prevents this commit from re-triggering the workflow.
+      - name: Commit benchmark results to repository
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add data/comparison_reports/
+          git diff --staged --quiet \
+            && echo "No new report files — nothing to commit." \
+            || git commit -m "ci: benchmark results for ${GITHUB_SHA::8} [skip ci]" \
+            && git push

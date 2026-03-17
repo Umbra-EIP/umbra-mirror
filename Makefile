@@ -1,4 +1,4 @@
-.PHONY: help install lint format type-check test audit docker-build docker-run regression clean
+.PHONY: help install lint format type-check test audit docker-build docker-run regression benchmark clean
 
 PYTHON      := python3
 IMAGE_NAME  := umbra
@@ -15,7 +15,8 @@ help:
 	@echo "  audit         Run pip-audit security check"
 	@echo "  docker-build  Build the Docker image"
 	@echo "  docker-run    Run the Streamlit dashboard in Docker"
-	@echo "  regression    Run model inference regression check"
+	@echo "  regression    Run model accuracy regression gate"
+	@echo "  benchmark     Run full model benchmark and save report"
 	@echo "  clean         Remove build/cache artifacts"
 
 install:
@@ -48,6 +49,9 @@ docker-run:
 
 regression:
 	$(PYTHON) scripts/regression_check.py
+
+benchmark:
+	$(PYTHON) scripts/run_comparison.py --dataset-id 1
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
