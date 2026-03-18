@@ -210,7 +210,7 @@ if run_stress:
         options=_all_batch_sizes,
         index=0,
         key="hw_stress_bs",
-    )  # type: ignore[assignment]
+    )
 else:
     n_stress = 500
     stress_bs = 1
@@ -266,6 +266,8 @@ st.caption(
 # ─────────────────────────────────────────────────────────────────────────────
 # Run profiling
 # ─────────────────────────────────────────────────────────────────────────────
+report: HardwareReport | None = None
+
 if run_btn:
     _status = st.empty()
     _bar = st.progress(0)
@@ -294,7 +296,7 @@ if run_btn:
 # ─────────────────────────────────────────────────────────────────────────────
 # Results
 # ─────────────────────────────────────────────────────────────────────────────
-report: HardwareReport | None = st.session_state.get("hw_report")
+report = st.session_state.get("hw_report")
 
 if report is None:
     st.markdown(
