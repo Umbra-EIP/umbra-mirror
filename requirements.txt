@@ -2,6 +2,8 @@
 tensorflow==2.19.0
 numpy==1.26.4          # TF 2.19 requires numpy <2.0
 scipy==1.13.1
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
 
 # Data / ML utilities
 pandas==2.2.3
