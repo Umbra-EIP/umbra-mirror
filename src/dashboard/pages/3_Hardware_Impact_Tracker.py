@@ -314,6 +314,8 @@ if report is None:
     )
     st.stop()
 
+assert report is not None  # st.stop() is not typed NoReturn; narrow for mypy
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
