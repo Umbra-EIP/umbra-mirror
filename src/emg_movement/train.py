@@ -23,41 +23,51 @@ parser.add_argument(
     default="cnn_lstm_emg_v3.keras",
     help="Output model filename under src/models/",
 )
-args = parser.parse_args()
 
-data_dir = os.path.join(PREPROCESS_PATH, str(args.dataset))
-X = np.load(os.path.join(data_dir, "X.npy"))
-y = np.load(os.path.join(data_dir, "y.npy"))
-y = y - 1
 
-print(X.shape, y.shape)
+def main() -> None:
+    """Load preprocessed EMG data, train CNN-LSTM, and save the Keras model."""
+    args = parser.parse_args()
 
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    data_dir = os.path.join(PREPROCESS_PATH, str(args.dataset))
+    X = np.load(os.path.join(data_dir, "X.npy"))
+    y = np.load(os.path.join(data_dir, "y.npy"))
+    y = y - 1
 
-num_classes = len(np.unique(y))
+    print(X.shape, y.shape)
 
-model = build_cnn_lstm(input_shape=(200, 10), num_classes=num_classes)
+    X_train, X_val, y_train, y_val = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-    loss="sparse_categorical_crossentropy",
-    metrics=["accuracy"],
-)
+    num_classes = len(np.unique(y))
 
-model.summary()
+    model = build_cnn_lstm(input_shape=(200, 10), num_classes=num_classes)
 
-callbacks = [
-    tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
-]
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"],
+    )
 
-model.fit(
-    X_train,
-    y_train,
-    validation_data=(X_val, y_val),
-    epochs=50,
-    batch_size=64,
-    callbacks=callbacks,
-)
+    model.summary()
 
-os.makedirs(MODEL_DIR, exist_ok=True)
-model.save(os.path.join(MODEL_DIR, args.output))
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
+    ]
+
+    model.fit(
+        X_train,
+        y_train,
+        validation_data=(X_val, y_val),
+        epochs=50,
+        batch_size=64,
+        callbacks=callbacks,
+    )
+
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    model.save(os.path.join(MODEL_DIR, args.output))
+
+
+if __name__ == "__main__":
+    main()
