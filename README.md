@@ -82,8 +82,11 @@ Visualisation et inférence sur les données préprocessées et les modèles ent
 streamlit run src/dashboard/app.py
 ```
 
-Dans l’interface : choisir un dataset dans `data/preprocessed/`, charger un modèle depuis `src/models/`, puis lancer l’inférence.
-Le dashboard propose aussi une page **Dataset Quality Checker** (sidebar) pour valider l’intégrité et la répartition des jeux préprocessés (X.npy / y.npy) avant entraînement.
+L’application est organisée en deux sections (**EMG — Hand movement** et **EEG–EMG**) via la navigation latérale.
+
+**EMG — Hand movement** : choisir un dataset dans `data/preprocessed/`, charger un modèle depuis `src/models/`, puis lancer l’inférence ; pages outils : **Dataset Quality Checker**, **Model Comparator**, **Hardware Impact Tracker**.
+
+**EEG–EMG** : placer des `.npz` (EEG + EMG) dans `data/eeg_emg/` et des checkpoints PyTorch (`.pth`) dans `src/eeg_emg/` (ou utiliser les téléversements dans la barre latérale), puis lancer l’inférence sur une fraction de validation. Voir `docs/dashboard_emg_eeg_emg_roadmap.md` pour la suite (qualité des jeux, comparateur, profilage matériel).
 
 ---
 
@@ -91,8 +94,9 @@ Le dashboard propose aussi une page **Dataset Quality Checker** (sidebar) pour v
 
 - `src/config.py` : chemins et constantes (NinaPro, preprocessed, models).
 - `src/emg_movement/` : préprocessing, modèle CNN-LSTM, entraînement, utils NinaPro.
-- `src/eeg_emg/` : futur modèle EEG → EMG (placeholder).
-- `src/dashboard/` : application Streamlit (EMG Hand Movement Decoder, Dataset Quality Checker).
+- `src/eeg_emg/` : entraînement EEG→EMG (`eeg2emg_run.py`), inférence partagée (`eeg2emg_inference.py`), checkpoints `.pth`.
+- `src/dashboard/` : application Streamlit multipage (`app.py`) — section EMG (dossier `emg/`) et section EEG–EMG (`eeg_emg/`).
+- `data/eeg_emg/` : jeux `.npz` optionnels pour le dashboard EEG–EMG.
 - `src/models/` : modèles Keras sauvegardés (.keras).
 - `data/ninapro/` : données brutes NinaPro.
 - `data/preprocessed/` : jeux préprocessés (X.npy, y.npy par sous-dossier).
