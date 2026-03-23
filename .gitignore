@@ -3,8 +3,14 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+.DS_Store
+
 # C extensions
 *.so
+
+data/ninapro/s*/*
+data/preprocessed/
+data/quality_reports/
 
 # Distribution / packaging
 .Python
@@ -134,6 +140,19 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# Kestal AI
+.kestal/
+kestal/
+**/kestal/
+.cursor/rules/kestal*.mdc
+.mcp.json
+.cursor/mcp.json
+.claude/*
+CLAUDE.md
+AGENTS.md
+.claudeignore
+
+
 # Environments
 .env
 .envrc
@@ -205,3 +224,4 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+.axon/

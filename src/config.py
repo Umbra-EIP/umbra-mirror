@@ -1,0 +1,23 @@
+# src/config.py
+
+FS = 1000
+
+LOWPASS_CUTOFF = 5
+FILTER_ORDER = 2
+
+NINAPRO_ROOT = "data/ninapro"
+PREPROCESS_PATH = "data/preprocessed"
+MODEL_DIR = "src/models"
+
+QUALITY_REPORTS_DIR = "data/quality_reports"
+COMPARISON_REPORTS_DIR = "data/comparison_reports"
+HARDWARE_REPORTS_DIR = "data/hardware_reports"
+
+WINDOW_MS = 500
+WINDOW_SAMPLES = int(FS * WINDOW_MS / 1000)
+WINDOW_STEP_MS = 100
+WINDOW_STEP_SAMPLES = int(FS * WINDOW_STEP_MS / 1000)
+
+REST_LABEL = 0
+
+SAMPLING_EMG_RATE = 100

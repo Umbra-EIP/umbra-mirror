@@ -1,0 +1,4 @@
+timestamp,git_sha,git_ref,dataset_id,n_windows,model_name,accuracy,top3_accuracy,macro_f1,mean_inference_ms,std_inference_ms,file_size_mb,param_count,is_broken,broken_reasons
+2026-03-17T01:06:00+00:00,local,local,1,500,cnn_lstm_1.keras,0.832,0.95,0.839431,18.055,0.391,1.1629,97335,False,
+2026-03-17T01:06:00+00:00,local,local,1,500,cnn_lstm_emg_v2.keras,0.308,0.426,0.344398,17.905,0.484,0.6876,56247,False,
+2026-03-17T01:06:00+00:00,local,local,1,500,cnn_lstm_emg_v3.keras,0.334,0.444,0.369488,18.128,0.366,1.1629,97335,False,

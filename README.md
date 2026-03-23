@@ -1,97 +1,108 @@
-# Data Version Control (DVC) Usage Guide
+# Umbra – EIP
 
-This project uses **DVC (Data Version Control)** to manage datasets and model files efficiently. DVC allows versioning large files, sharing data between collaborators, and keeping your Git repository lightweight.
+## Description du projet
 
----
+Ce projet vise à développer une intelligence artificielle capable de devenir une **copie motrice de l'individu**, fonctionnant **en tandem** avec lui. Grâce à l'utilisation de **technologies non-invasives** comme les **électromyogrammes (EMG)** et les **électroencéphalogrammes (EEG)**, l'IA peut déléguer le contrôle de **membres supplémentaires ou de remplacement**, ou assister dans le contrôle d'un **exosquelette**.
 
-## ⚙️ Prerequisites
+Cette approche ouvre des perspectives importantes :
 
-DVC is already configured for this repository.
-Make sure you have DVC installed locally:
-
-```bash
-dvc --version
-```
-
-If DVC is not installed -> pip install requirements.txt
+- **Recherche et médecine** : lutte contre les maladies neuro-dégénératives et réhabilitation motrice.
+- **Usage quotidien et sécurité** : augmentation des capacités et assistance dans la vie de tous les jours.
 
 ---
 
-## 📁 Adding Data to DVC
+## Fonctionnement
 
-To track a new dataset or model file with DVC:
+Le projet repose sur deux modèles principaux :
 
-```bash
-dvc add path/to/your/data
-```
+1. **Modèle EEG → EMG**
+   À partir des signaux EEG du cerveau, le modèle prédira les signaux EMG correspondants, capturant ainsi l'intention motrice de l'utilisateur.
 
-What this does:
-- Creates a `.dvc` file (for example, `data.csv.dvc`) that points to the large file.
-- Adds the actual large file to the DVC cache and ignores it in Git.
-
-Then commit the generated `.dvc` file and updated `.gitignore`:
-
-```bash
-git add path/to/your/data.dvc .gitignore
-git commit -m "Track dataset with DVC"
-```
+2. **Modèle EMG → Mouvement**
+   Ce modèle prend les signaux EMG et prédit les mouvements des membres ou de l'exosquelette (gestes de la main NinaPro). **Implémenté** : préprocessing, entraînement CNN-LSTM, dashboard Streamlit.
 
 ---
 
-## ☁️ Pushing Data to Remote Storage
+## Technologies utilisées
 
-To upload tracked files from your local cache to the remote storage (already configured for this repo):
+- **EEG** (Électroencéphalogrammes) pour capter l'activité cérébrale.
+- **EMG** (Électromyogrammes) pour capter l'activité musculaire.
+- **Machine Learning / Deep Learning** (TensorFlow/Keras) pour prédire et traduire les signaux en mouvements.
+- **Python** comme langage principal de développement.
+
+---
+
+## Installation
 
 ```bash
-dvc push
+git clone https://github.com/votre-utilisateur/umbra.git
+cd umbra
+pip install -r requirements.txt
 ```
 
-Notes:
-- `dvc push` uploads only DVC-tracked files.
-- The remote configuration is already set up, so you don’t need extra flags.
-
-To push a specific file:
+Pour un environnement Conda :
 
 ```bash
-dvc push path/to/your/data.dvc
+conda env update --file environment.yml --name umbra-env
+conda activate umbra-env
 ```
 
 ---
 
-## ⬇️ Pulling Data from Remote
+## Utilisation
 
-When you clone the repository or switch to a new branch that references data you don’t have locally:
+Toutes les commandes sont à exécuter **à la racine du dépôt**.
 
-```bash
-dvc pull
-```
+### 1. Préprocessing (NinaPro → fenêtres EMG + labels)
 
-This downloads all DVC-tracked files needed for the current Git commit.
-
-To pull a specific file:
+Lit les données brutes dans `data/ninapro/` et enregistre un nouveau jeu dans `data/preprocessed/<id>/` (X.npy, y.npy) :
 
 ```bash
-dvc pull path/to/your/data.dvc
+python -m src.main
 ```
+
+### 2. Entraînement du modèle EMG → mouvement
+
+Utilise un jeu préprocessé par son identifiant (par défaut `1`) :
+
+```bash
+python -m src.emg_movement.train --dataset 1
+```
+
+Options :
+
+- `--dataset N` : utiliser `data/preprocessed/N/` (défaut : 1).
+- `--output FICHIER.keras` : nom du modèle enregistré dans `src/models/` (défaut : `cnn_lstm_emg_v3.keras`).
+
+### 3. Dashboard Streamlit
+
+Visualisation et inférence sur les données préprocessées et les modèles entraînés :
+
+```bash
+streamlit run src/dashboard/app.py
+```
+
+Dans l’interface : choisir un dataset dans `data/preprocessed/`, charger un modèle depuis `src/models/`, puis lancer l’inférence.
+Le dashboard propose aussi une page **Dataset Quality Checker** (sidebar) pour valider l’intégrité et la répartition des jeux préprocessés (X.npy / y.npy) avant entraînement.
 
 ---
 
-## 🔁 Updating Data Versions
+## Structure du dépôt
 
-If you modify a tracked dataset or model:
+- `src/config.py` : chemins et constantes (NinaPro, preprocessed, models).
+- `src/emg_movement/` : préprocessing, modèle CNN-LSTM, entraînement, utils NinaPro.
+- `src/eeg_emg/` : futur modèle EEG → EMG (placeholder).
+- `src/dashboard/` : application Streamlit (EMG Hand Movement Decoder, Dataset Quality Checker).
+- `src/models/` : modèles Keras sauvegardés (.keras).
+- `data/ninapro/` : données brutes NinaPro.
+- `data/preprocessed/` : jeux préprocessés (X.npy, y.npy par sous-dossier).
+- `tests/` : tests unitaires (environnement, modèle).
+- `docs/` : documentation additionnelle (ex. beta_test_plan).
 
-1. Re-add it with DVC
-   ```bash
-   dvc add path/to/your/data
-   ```
-2. Commit the updated `.dvc` file
-   ```bash
-   git add path/to/your/data.dvc
-   git commit -m "Update dataset"
-   ```
-3. Push the new version
-   ```bash
-   dvc push
-   ```
+---
 
-Each Git commit corresponds to a data version — making it easy to roll back or compare versions later.
+## Cas d'usage
+
+- Assistance aux personnes atteintes de troubles moteurs ou neurodégénératifs.
+- Contrôle d'exosquelettes pour la rééducation ou l'augmentation physique.
+- Applications grand public dans le domaine de la sécurité ou de l'ergonomie.
