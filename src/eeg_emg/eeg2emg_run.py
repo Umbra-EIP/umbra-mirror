@@ -404,10 +404,21 @@ def main(args):
         )
         if val_mse < best_val:
             best_val = val_mse
+            config = {
+                "n_eeg_channels": n_eeg_ch,
+                "n_emg_channels": n_emg_ch,
+                "cnn_channels": args.cnn_channels,
+                "lstm_hidden": args.lstm_hidden,
+                "lstm_layers": args.lstm_layers,
+                "bidirectional": args.bidirectional,
+                "window_size": args.window_size,
+            }
             torch.save(
                 {
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
+                    "config": config,
+                    "best_val_mse": best_val,
                 },
                 args.save_path,
             )
