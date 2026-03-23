@@ -11,6 +11,7 @@ __pycache__/
 data/ninapro/s*/*
 data/preprocessed/
 data/quality_reports/
+data/eeg_emg/_uploads/
 
 # Distribution / packaging
 .Python
@@ -225,3 +226,4 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .axon/
+

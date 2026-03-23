@@ -9,6 +9,10 @@ NINAPRO_ROOT = "data/ninapro"
 PREPROCESS_PATH = "data/preprocessed"
 MODEL_DIR = "src/models"
 
+# EEG→EMG dashboard & data (paired .npz, PyTorch checkpoints)
+EEG_EMG_DATA_DIR = "data/eeg_emg"
+EEG_EMG_MODEL_DIR = "src/eeg_emg"
+
 QUALITY_REPORTS_DIR = "data/quality_reports"
 COMPARISON_REPORTS_DIR = "data/comparison_reports"
 HARDWARE_REPORTS_DIR = "data/hardware_reports"

@@ -35,7 +35,8 @@ ignore = [
 "src/dashboard/app.py" = ["E402"]
 "src/dashboard/model_comparator.py" = ["E402"]
 "src/dashboard/hardware_profiler.py" = ["E402"]
-"src/dashboard/pages/*.py" = ["E402"]
+"src/dashboard/emg/*.py" = ["E402"]
+"src/dashboard/eeg_emg/*.py" = ["E402"]
 # Scripts that manipulate sys.path to import src.* from the repo root
 "scripts/run_comparison.py" = ["E402"]
 
@@ -70,7 +71,7 @@ python_functions = ["test_*"]
 
 [tool.coverage.run]
 source = ["src"]
-omit = ["tests/*", "scripts/*", "src/eeg_emg/*"]  # stub package
+omit = ["tests/*", "scripts/*", "src/eeg_emg/eeg2emg_run.py"]
 
 [tool.coverage.report]
 show_missing = true
