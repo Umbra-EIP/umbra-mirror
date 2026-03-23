@@ -23,7 +23,15 @@ from torch.utils.data import DataLoader, Dataset
 # -----------------------------
 # Utilities: robust NPZ loading
 # -----------------------------
-def load_npz_anycase(path):
+def load_npz_with_keys(path):
+    """
+    Load a paired EEG/EMG archive and return resolved key names plus arrays.
+
+    Raises
+    ------
+    KeyError
+        If EEG/EMG arrays cannot be resolved from the file.
+    """
     d = np.load(path, allow_pickle=True)
     # map lowercase->original key
     keys = {k.lower(): k for k in d.files}
@@ -69,7 +77,12 @@ def load_npz_anycase(path):
                         break
         else:
             raise KeyError(f"Could not find EEG/EMG in {path}. Keys found: {d.files}")
-    return d[eeg_key], d[emg_key]
+    return eeg_key, emg_key, d[eeg_key], d[emg_key]
+
+
+def load_npz_anycase(path):
+    _, _, eeg, emg = load_npz_with_keys(path)
+    return eeg, emg
 
 
 # -----------------------------
