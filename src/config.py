@@ -12,6 +12,9 @@ MODEL_DIR = "src/models"
 # EEG→EMG dashboard & data (paired .npz, PyTorch checkpoints)
 EEG_EMG_DATA_DIR = "data/eeg_emg"
 EEG_EMG_MODEL_DIR = "src/eeg_emg"
+EEG_EMG_QUALITY_REPORTS_DIR = "data/eeg_emg_quality_reports"
+EEG_EMG_COMPARISON_REPORTS_DIR = "data/eeg_emg_comparison_reports"
+EEG_EMG_HARDWARE_REPORTS_DIR = "data/eeg_emg_hardware_reports"
 
 QUALITY_REPORTS_DIR = "data/quality_reports"
 COMPARISON_REPORTS_DIR = "data/comparison_reports"

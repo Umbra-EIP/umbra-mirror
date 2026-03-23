@@ -35,6 +35,21 @@ pages = {
             title="Decoder",
             icon="🧠",
         ),
+        st.Page(
+            str(_dashboard / "eeg_emg" / "dataset_quality_page.py"),
+            title="Dataset quality",
+            icon="📋",
+        ),
+        st.Page(
+            str(_dashboard / "eeg_emg" / "model_comparator_page.py"),
+            title="Model comparator",
+            icon="🔬",
+        ),
+        st.Page(
+            str(_dashboard / "eeg_emg" / "hardware_impact_page.py"),
+            title="Hardware impact",
+            icon="⚡",
+        ),
     ],
 }
 

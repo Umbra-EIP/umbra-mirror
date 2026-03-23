@@ -86,7 +86,7 @@ L’application est organisée en deux sections (**EMG — Hand movement** et **
 
 **EMG — Hand movement** : choisir un dataset dans `data/preprocessed/`, charger un modèle depuis `src/models/`, puis lancer l’inférence ; pages outils : **Dataset Quality Checker**, **Model Comparator**, **Hardware Impact Tracker**.
 
-**EEG–EMG** : placer des `.npz` (EEG + EMG) dans `data/eeg_emg/` et des checkpoints PyTorch (`.pth`) dans `src/eeg_emg/` (ou utiliser les téléversements dans la barre latérale), puis lancer l’inférence sur une fraction de validation. Voir `docs/dashboard_emg_eeg_emg_roadmap.md` pour la suite (qualité des jeux, comparateur, profilage matériel).
+**EEG–EMG** : placer des `.npz` (EEG + EMG) dans `data/eeg_emg/` et des checkpoints PyTorch (`.pth`) dans `src/eeg_emg/` (ou téléversements). Pages : **Decoder**, **Dataset quality**, **Model comparator**, **Hardware impact** (rapports JSON sous `data/eeg_emg_*_reports/`). Détails : `docs/dashboard_emg_eeg_emg_roadmap.md`.
 
 ---
 

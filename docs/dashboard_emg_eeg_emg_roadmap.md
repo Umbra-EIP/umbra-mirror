@@ -12,7 +12,7 @@ This document tracks the split of the Streamlit app into two product areas and p
 | [73](https://github.com/Umbra-EIP/umbra-mirror/issues/73) | EEG–EMG model comparator (PyTorch regression) |
 | [74](https://github.com/Umbra-EIP/umbra-mirror/issues/74) | EEG–EMG hardware impact tracker (PyTorch) |
 
-## Current layout (after #70 / #71)
+## Current layout
 
 - Entry: `streamlit run src/dashboard/app.py`
 - **EMG — Hand movement**
@@ -20,29 +20,21 @@ This document tracks the split of the Streamlit app into two product areas and p
   - Dataset quality (`emg/dataset_quality.py`)
   - Model comparator (`emg/model_comparator_page.py`)
   - Hardware impact (`emg/hardware_impact_page.py`)
-- **EEG–EMG**
-  - Decoder (`eeg_emg/eeg2emg_dashboard.py`): paired `.npz`, PyTorch `.pth` from `eeg2emg_run.py`
-  - Inference helpers: `src/eeg_emg/eeg2emg_inference.py`
-  - Paths: `EEG_EMG_DATA_DIR`, `EEG_EMG_MODEL_DIR` in `src/config.py`
+- **EEG–EMG** (research loop on collected `.npz` + `.pth`)
+  - Decoder (`eeg_emg/eeg2emg_dashboard.py`)
+  - Dataset quality (`eeg_emg/dataset_quality_page.py`) — `src/dashboard/eeg_emg_dataset_quality.py`, reports `EEG_EMG_QUALITY_REPORTS_DIR`
+  - Model comparator (`eeg_emg/model_comparator_page.py`) — `src/dashboard/eeg_emg_model_compare.py`, `EEG_EMG_COMPARISON_REPORTS_DIR`
+  - Hardware impact (`eeg_emg/hardware_impact_page.py`) — `src/dashboard/eeg_emg_torch_hardware.py`, `EEG_EMG_HARDWARE_REPORTS_DIR`
+  - Inference / windowing: `src/eeg_emg/eeg2emg_inference.py`; NPZ keys: `load_npz_with_keys()` in `eeg2emg_run.py`
+  - Paths: `EEG_EMG_DATA_DIR`, `EEG_EMG_MODEL_DIR` + report dirs in `src/config.py`
 
-## Remaining steps (by issue)
+Issues [#72](https://github.com/Umbra-EIP/umbra-mirror/issues/72)–[#74](https://github.com/Umbra-EIP/umbra-mirror/issues/74) are covered by this stack.
 
-### #72 — Dataset quality (EEG–EMG)
+## Follow-up ideas
 
-1. Define quality rules for paired EEG/EMG arrays (shape alignment, NaNs, channel counts, duration).
-2. Add `src/dashboard/eeg_emg/dataset_quality_page.py` (or similar) and optional report directory (e.g. `data/eeg_emg_quality_reports/`).
-3. Reuse UX patterns from `src/dashboard/dataset_quality.py` where sensible.
-
-### #73 — Model comparator (EEG–EMG)
-
-1. List/compare `.pth` checkpoints (metadata from saved `config`, file mtime, size).
-2. Run a fixed validation protocol (same `run_inference` or shared evaluator) and persist JSON reports.
-3. Optional: overlay prediction curves for two models.
-
-### #74 — Hardware impact (EEG–EMG)
-
-1. Port `hardware_profiler` patterns: Torch model load time, RAM, GPU memory (if CUDA), batch latency.
-2. New page under EEG–EMG section; save reports under e.g. `data/eeg_emg_hardware_reports/` (add to `src/config.py` when introduced).
+- Quality page: per-channel histograms or PSD preview.
+- Comparator: overlay predicted vs true EMG for two checkpoints on the same window.
+- Hardware: optional CUDA peak memory during a longer stress loop.
 
 ## Verification
 
