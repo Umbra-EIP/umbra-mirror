@@ -30,7 +30,6 @@ from src.emg_movement.gestures import label_to_gesture_name
 
 st.set_page_config(
     page_title="Dataset Quality Checker | Umbra",
-    page_icon="📋",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -208,12 +207,12 @@ st.subheader("Verdict")
 if report.loaded:
     if report.passed:
         st.markdown(
-            '<p class="verdict-pass">✓ PASS — No critical issues. Dataset is suitable for training.</p>',
+            '<p class="verdict-pass">PASS — No critical issues. Dataset is suitable for training.</p>',
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            '<p class="verdict-fail">✗ FAIL — Critical issues found (NaN/Inf, too few classes, or too few samples).</p>',
+            '<p class="verdict-fail">FAIL — Critical issues found (NaN/Inf, too few classes, or too few samples).</p>',
             unsafe_allow_html=True,
         )
 else:

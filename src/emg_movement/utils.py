@@ -66,7 +66,7 @@ def extract_trial_windows(emg: np.ndarray, df: pd.DataFrame) -> tuple[np.ndarray
     window_ids = []
 
     curr_id = 0
-    for y, rep in zip(labels, repetitions, strict=False):
+    for y, rep in zip(labels, repetitions):
         if curr_stim is None:
             curr_rep, curr_stim = rep, y
 

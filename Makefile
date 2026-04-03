@@ -1,4 +1,4 @@
-.PHONY: help install lint format type-check test audit docker-build docker-run regression benchmark clean
+.PHONY: help install lint format type-check test audit docker-build docker-run regression benchmark clean train-eeg2emg-single
 
 PYTHON      := python3
 IMAGE_NAME  := umbra
@@ -52,6 +52,13 @@ regression:
 
 benchmark:
 	$(PYTHON) scripts/run_comparison.py --dataset-id 1
+
+# Single-subject / high-accuracy EEG→EMG (group-aware val split, cosine LR, AdamW)
+train-eeg2emg-single:
+	$(PYTHON) -m src.eeg_emg.eeg2emg_train_single_subject \
+		--data_path data/eeg_emg/dataset_augmented.npz \
+		--normalize \
+		--save_path src/eeg_emg/eeg2emg_single_subject_best.pth
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

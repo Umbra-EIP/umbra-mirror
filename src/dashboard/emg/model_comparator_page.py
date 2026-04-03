@@ -36,7 +36,6 @@ id_to_gesture = dict(enumerate(ALL_GESTURES))
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Model Comparator | Umbra",
-    page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -224,7 +223,7 @@ else:
 # ── Run button ─────────────────────────────────────────────────────────────
 st.sidebar.divider()
 run_btn = st.sidebar.button(
-    "▶  Run Comparison",
+    "Run comparison",
     type="primary",
     use_container_width=True,
     disabled=len(selected_models) == 0,
@@ -233,7 +232,7 @@ run_btn = st.sidebar.button(
 # ─────────────────────────────────────────────────────────────────────────────
 # Page header
 # ─────────────────────────────────────────────────────────────────────────────
-st.title("🔬 Model Comparator")
+st.title("Model Comparator")
 st.caption(
     "Benchmark Keras models side-by-side — accuracy, Top-K, F1, confusion matrix, "
     "confidence & entropy, inference latency, shape validation, and architecture."
@@ -248,7 +247,7 @@ if run_btn:
 
     def _cb(label: str, done: int, total: int) -> None:
         _bar.progress(done / max(total, 1))
-        _status.caption(f"⏳ {label}")
+        _status.caption(label)
 
     with st.spinner(""):
         results = run_model_comparison(
@@ -293,10 +292,10 @@ if results is None:
     st.markdown(
         """
         <div class="empty-state">
-            <div class="empty-icon">🔬</div>
+            <div class="empty-icon">&nbsp;</div>
             <div class="empty-title">No comparison run yet</div>
             <div class="empty-body">
-                Select models in the sidebar and click <strong>▶ Run Comparison</strong>,
+                Select models in the sidebar and click <strong>Run comparison</strong>,
                 or load a saved comparison.
             </div>
         </div>
@@ -308,7 +307,7 @@ if results is None:
 # ── Shared helpers ─────────────────────────────────────────────────────────
 has_inference = any(r.accuracy is not None for r in results)
 
-MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+MEDALS = {1: "1st", 2: "2nd", 3: "3rd"}
 
 
 def _sort_key(r: ModelComparisonResult) -> float:
@@ -397,7 +396,7 @@ if cfg.get("use_dataset") and cfg.get("dataset"):
 st.divider()
 st.markdown('<p class="section-title">Ranking</p>', unsafe_allow_html=True)
 
-rank_perf_tab, rank_tech_tab = st.tabs(["📈 Performance", "⚙️ Technical"])
+rank_perf_tab, rank_tech_tab = st.tabs(["Performance", "Technical"])
 
 perf_rows = []
 tech_rows = []
@@ -407,13 +406,13 @@ for rank, r in enumerate(sorted_results, start=1):
     model_label = r.name.replace(".keras", "")
 
     if not r.loaded:
-        status = "❌ Load failed"
+        status = "Load failed"
     elif r.is_broken:
-        status = "⚠️ Broken"
+        status = "Broken"
     elif r.accuracy is None:
-        status = "ℹ️ Metadata only"
+        status = "Metadata only"
     else:
-        status = "✅ Healthy"
+        status = "Healthy"
 
     perf_rows.append(
         {
@@ -428,9 +427,7 @@ for rank, r in enumerate(sorted_results, start=1):
     )
 
     shape_str = (
-        "✅ OK"
-        if r.shape_compatible is True
-        else ("❌ Mismatch" if r.shape_compatible is False else "—")
+        "OK" if r.shape_compatible is True else ("Mismatch" if r.shape_compatible is False else "—")
     )
     tech_rows.append(
         {
@@ -501,7 +498,7 @@ chart_rows = [
 df_chart = pd.DataFrame(chart_rows)
 
 tab_acc, tab_topk, tab_lat, tab_size, tab_cm = st.tabs(
-    ["📊 Accuracy & F1", "🎯 Top-K", "⚡ Latency", "💾 Size & Params", "🔲 Confusion Matrix"]
+    ["Accuracy & F1", "Top-K", "Latency", "Size & params", "Confusion matrix"]
 )
 
 # ── Accuracy & F1 tab ─────────────────────────────────────────────────────
@@ -810,25 +807,25 @@ for i, r in enumerate(sorted_results):
             card_cls, badge_cls, badge_txt = (
                 "health-card-failed",
                 "badge-failed",
-                "❌ LOAD FAILED",
+                "LOAD FAILED",
             )
         elif r.is_broken:
             card_cls, badge_cls, badge_txt = (
                 "health-card-broken",
                 "badge-broken",
-                "⚠️ BROKEN",
+                "BROKEN",
             )
         elif r.accuracy is None:
             card_cls, badge_cls, badge_txt = (
                 "health-card-nodata",
                 "badge-nodata",
-                "ℹ️ NO DATA",
+                "NO DATA",
             )
         else:
             card_cls, badge_cls, badge_txt = (
                 "health-card-healthy",
                 "badge-healthy",
-                "✅ HEALTHY",
+                "HEALTHY",
             )
 
         card = (
@@ -857,7 +854,7 @@ for i, r in enumerate(sorted_results):
         # Shape info
         if r.model_input_shape is not None and r.dataset_input_shape is not None:
             shape_cls = "shape-ok" if r.shape_compatible else "shape-bad"
-            shape_icon = "✓" if r.shape_compatible else "✗"
+            shape_icon = "OK" if r.shape_compatible else "X"
             card += (
                 f'<div class="{shape_cls}">'
                 f"{shape_icon} model {r.model_input_shape} vs data {r.dataset_input_shape}"
@@ -866,7 +863,7 @@ for i, r in enumerate(sorted_results):
 
         # File modified
         if r.file_modified:
-            card += f'<div class="health-meta">📅 {html.escape(r.file_modified)}</div>'
+            card += f'<div class="health-meta">{html.escape(r.file_modified)}</div>'
 
         card += "</div>"
         st.markdown(card, unsafe_allow_html=True)
@@ -883,7 +880,7 @@ if models_with_pc:
     for r in models_with_pc:
         macro_f1_str = f"  ·  Macro F1: {r.macro_f1 * 100:.1f}%" if r.macro_f1 is not None else ""
         with st.expander(
-            f"📋 {r.name.replace('.keras', '')} — per-gesture breakdown{macro_f1_str}",
+            f"{r.name.replace('.keras', '')} — per-gesture breakdown{macro_f1_str}",
             expanded=False,
         ):
             pc_rows = []
@@ -971,7 +968,7 @@ if models_with_conf:
 
     # Summary metrics row
     conf_cols = st.columns(len(models_with_conf))
-    for col, r in zip(conf_cols, models_with_conf, strict=False):
+    for col, r in zip(conf_cols, models_with_conf):
         model_lbl = r.name.replace(".keras", "")
         col.metric(
             model_lbl,
@@ -1024,7 +1021,7 @@ if models_with_arch:
         n_trainable = sum(lyr["params"] for lyr in layer_summary if lyr.get("trainable", True))
         n_frozen = (r.param_count or 0) - n_trainable
         with st.expander(
-            f"🏗️ {r.name.replace('.keras', '')} — {len(layer_summary)} layers · "
+            f"{r.name.replace('.keras', '')} — {len(layer_summary)} layers · "
             f"{_fmt_params(r.param_count)} total params",
             expanded=False,
         ):
@@ -1087,7 +1084,7 @@ df_export = pd.DataFrame(export_rows)
 ex1, ex2, _ = st.columns([1, 1, 3])
 with ex1:
     st.download_button(
-        "⬇ Summary CSV",
+        "Summary CSV",
         data=df_export.to_csv(index=False),
         file_name="model_comparison.csv",
         mime="text/csv",
@@ -1102,7 +1099,7 @@ with ex2:
         ).strip()
         or "default"
     )
-    if st.button("💾 Save to disk", key="mc_save_export"):
+    if st.button("Save to disk", key="mc_save_export"):
         try:
             p = save_comparison(results, cfg, name=save_name_export)
             st.success(f"Saved as **{p.name}**")

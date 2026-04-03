@@ -2,25 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import torch
 from scipy.signal import resample
 from torch.utils.data import DataLoader, random_split
 
+from src.eeg_emg.eeg2emg_metrics import EEGEMGMetrics, compute_metrics
 from src.eeg_emg.eeg2emg_run import (
     CNNLSTM_EEG2EMG,
     EEGEMGWindowDataset,
     evaluate,
     load_npz_anycase,
-    mse_metric,
-    r2_score_np,
     to_trials_format,
 )
 
 
-@dataclass(frozen=True)
+@dataclass
 class InferenceResult:
     """Aggregated metrics and arrays from validation-set inference."""
 
@@ -28,6 +27,8 @@ class InferenceResult:
     r2: float
     preds: np.ndarray
     trues: np.ndarray
+    metrics: EEGEMGMetrics = field(default_factory=EEGEMGMetrics)
+    model_cfg: dict = field(default_factory=dict)
 
 
 def prepare_eeg_emg_trials(
@@ -70,12 +71,42 @@ def prepare_eeg_emg_trials(
     return eeg_trials, emg_trials, is_pre_windowed
 
 
+def _infer_config_from_weights(sd: dict) -> dict:
+    """Reconstruct the model config from checkpoint weight shapes.
+
+    Used for checkpoints saved before the ``"config"`` key was introduced.
+    """
+    # conv1.weight: (cnn_channels, n_eeg_channels, kernel)
+    cnn_channels, n_eeg_channels = sd["conv1.weight"].shape[:2]
+    # fc.weight: (n_emg_channels, lstm_out)
+    n_emg_channels, lstm_out = sd["fc.weight"].shape
+    # bidirectional LSTM doubles the output size
+    bidirectional = any("_reverse" in k for k in sd)
+    lstm_hidden = lstm_out // (2 if bidirectional else 1)
+    # count LSTM layers by looking for weight_ih_l{n} keys
+    lstm_layers = sum(1 for k in sd if k.startswith("lstm.weight_ih_l") and "_reverse" not in k)
+    # window_size cannot be inferred from weights — use training default
+    return {
+        "n_eeg_channels": int(n_eeg_channels),
+        "n_emg_channels": int(n_emg_channels),
+        "cnn_channels": int(cnn_channels),
+        "lstm_hidden": int(lstm_hidden),
+        "lstm_layers": int(lstm_layers),
+        "bidirectional": bidirectional,
+        "window_size": 256,  # default; override via run_inference(window_size=...)
+    }
+
+
 def load_eeg2emg_model(
     checkpoint_path: str,
     *,
     map_location: str | torch.device | None = None,
 ) -> tuple[CNNLSTM_EEG2EMG, dict]:
-    """Load ``CNNLSTM_EEG2EMG`` weights and config from a ``.pth`` saved by ``eeg2emg_run``."""
+    """Load ``CNNLSTM_EEG2EMG`` weights and config from a ``.pth`` saved by ``eeg2emg_run``.
+
+    Handles both new-style checkpoints (with a ``"config"`` key) and legacy
+    checkpoints that contain only ``"model_state_dict"``.
+    """
     device = map_location or ("cuda" if torch.cuda.is_available() else "cpu")
     if isinstance(device, str):
         device = torch.device(device)
@@ -83,7 +114,16 @@ def load_eeg2emg_model(
         ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
     except TypeError:
         ckpt = torch.load(checkpoint_path, map_location=device)
-    cfg = ckpt["config"]
+
+    # Support both dict-style and bare state-dict checkpoints
+    if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
+        sd = ckpt["model_state_dict"]
+        cfg = ckpt.get("config") or _infer_config_from_weights(sd)
+    else:
+        # bare state dict saved with torch.save(model.state_dict(), path)
+        sd = ckpt
+        cfg = _infer_config_from_weights(sd)
+
     model = CNNLSTM_EEG2EMG(
         cfg["n_eeg_channels"],
         cfg["n_emg_channels"],
@@ -92,7 +132,7 @@ def load_eeg2emg_model(
         lstm_layers=cfg.get("lstm_layers", 2),
         bidirectional=cfg.get("bidirectional", False),
     )
-    model.load_state_dict(ckpt["model_state_dict"])
+    model.load_state_dict(sd)
     model.to(device)
     model.eval()
     return model, cfg
@@ -156,9 +196,12 @@ def run_inference(
         val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
     preds, trues = evaluate(model, val_loader, device)
+    rich = compute_metrics(preds, trues)
     return InferenceResult(
-        mse=mse_metric(preds, trues),
-        r2=r2_score_np(preds, trues),
+        mse=rich.mse,
+        r2=rich.r2,
         preds=preds,
         trues=trues,
+        metrics=rich,
+        model_cfg=cfg,
     )

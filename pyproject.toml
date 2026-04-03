@@ -33,15 +33,17 @@ ignore = [
 # Streamlit multi-page apps require sys.path manipulation before other imports.
 # The E402 violations here are intentional — suppressing them is correct.
 "src/dashboard/app.py" = ["E402"]
-"src/dashboard/model_comparator.py" = ["E402"]
+"src/dashboard/model_comparator.py" = ["E402", "B905"]
 "src/dashboard/hardware_profiler.py" = ["E402"]
-"src/dashboard/emg/*.py" = ["E402"]
-"src/dashboard/eeg_emg/*.py" = ["E402"]
+"src/dashboard/emg/*.py" = ["E402", "B905"]
+"src/dashboard/eeg_emg/*.py" = ["E402", "B905"]
 "src/dashboard/eeg_emg_dataset_quality.py" = ["E402"]
 "src/dashboard/eeg_emg_model_compare.py" = ["E402"]
 "src/dashboard/eeg_emg_torch_hardware.py" = ["E402"]
 # Scripts that manipulate sys.path to import src.* from the repo root
 "scripts/run_comparison.py" = ["E402"]
+# zip(strict=) needs Python 3.10+; runtime may be 3.9
+"src/emg_movement/utils.py" = ["B905"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]

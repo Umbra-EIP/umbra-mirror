@@ -1,0 +1,51 @@
+{
+  "file_path": "data/eeg_emg/_uploads/dataset_augmented.npz",
+  "loaded": true,
+  "error": null,
+  "report_name": "default",
+  "eeg_key": "X",
+  "emg_key": "y",
+  "eeg_raw_shape": [
+    2745,
+    500,
+    8
+  ],
+  "emg_raw_shape": [
+    2745,
+    500,
+    8
+  ],
+  "eeg_dtype": "float64",
+  "emg_dtype": "int64",
+  "eeg_trials_shape": [
+    2745,
+    8,
+    500
+  ],
+  "emg_trials_shape": [
+    2745,
+    8,
+    500
+  ],
+  "n_trials": 2745,
+  "n_eeg_channels": 8,
+  "n_emg_channels": 8,
+  "min_time_samples": 500,
+  "time_aligned": true,
+  "eeg_nan": 0,
+  "eeg_inf": 0,
+  "emg_nan": 0,
+  "emg_inf": 0,
+  "eeg_min": -225963.43298543018,
+  "eeg_max": 75591.33426682441,
+  "emg_min": -128.0,
+  "emg_max": 127.0,
+  "window_size": 256,
+  "step": 128,
+  "n_windows": 2745,
+  "pre_windowed": true,
+  "flat_eeg_channels": 0,
+  "flat_emg_channels": 0,
+  "warnings": [],
+  "passed": true
+}

@@ -1,0 +1,75 @@
+{
+  "name": "profile",
+  "saved_at": "2026-03-29T10:58:57",
+  "report": {
+    "generated_at": "2026-03-29T10:58:57",
+    "npz_path": "data/eeg_emg/_uploads/dataset_augmented.npz",
+    "model_file": "eeg2emg_best.pth",
+    "system": {
+      "platform_str": "macOS-15.6.1-arm64-arm-64bit",
+      "python_version": "3.9.6",
+      "torch_version": "2.8.0",
+      "cuda_available": false,
+      "cuda_version": null,
+      "device_name": "cpu"
+    },
+    "loading": {
+      "model_file": "eeg2emg_best.pth",
+      "file_size_mb": 2.8562545776367188,
+      "load_time_s": 0.007737915999996403,
+      "ram_before_mb": 1707.21875,
+      "ram_after_mb": 1707.265625,
+      "cuda_mem_after_mb": null,
+      "n_eeg_channels": 8,
+      "n_emg_channels": 8,
+      "window_size": 256,
+      "load_error": null
+    },
+    "inference": [
+      {
+        "batch_size": 1,
+        "n_batches": 5,
+        "mean_ms": 5.679766599999425,
+        "std_ms": 0.6857631243471258,
+        "p50_ms": 5.454166999996346,
+        "p95_ms": 6.726091600006612
+      },
+      {
+        "batch_size": 4,
+        "n_batches": 5,
+        "mean_ms": 10.458408400000963,
+        "std_ms": 0.23125260585075794,
+        "p50_ms": 10.52787499999397,
+        "p95_ms": 10.736100000005422
+      },
+      {
+        "batch_size": 8,
+        "n_batches": 5,
+        "mean_ms": 13.569958399997972,
+        "std_ms": 0.24912072683655773,
+        "p50_ms": 13.577416999993375,
+        "p95_ms": 13.885758600002873
+      },
+      {
+        "batch_size": 16,
+        "n_batches": 5,
+        "mean_ms": 28.71203340000079,
+        "std_ms": 0.4569117493956881,
+        "p50_ms": 28.63670900001125,
+        "p95_ms": 29.28613359999588
+      }
+    ],
+    "config": {
+      "batch_sizes": [
+        1,
+        4,
+        8,
+        16
+      ],
+      "n_batch_runs": 5,
+      "step": 128,
+      "val_ratio": 0.2,
+      "device": "cpu"
+    }
+  }
+}

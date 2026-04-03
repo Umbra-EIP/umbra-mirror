@@ -87,7 +87,7 @@ def _shapes_compatible(model_shape: Optional[tuple], data_shape: tuple) -> Optio
         return None
     if len(model_shape) != len(data_shape):
         return False
-    return all(m == -1 or m == d for m, d in zip(model_shape, data_shape, strict=False))
+    return all(m == -1 or m == d for m, d in zip(model_shape, data_shape))
 
 
 def _topk_accuracy(y_true: np.ndarray, y_pred_probs: np.ndarray, k: int) -> float:
@@ -119,7 +119,7 @@ def _compute_confusion_matrix(
     idx_map = {lbl: i for i, lbl in enumerate(labels)}
     n = len(labels)
     cm = [[0] * n for _ in range(n)]
-    for true, pred in zip(y_true.tolist(), y_pred.tolist(), strict=False):
+    for true, pred in zip(y_true.tolist(), y_pred.tolist()):
         if true in idx_map and pred in idx_map:
             cm[idx_map[true]][idx_map[pred]] += 1
     return cm

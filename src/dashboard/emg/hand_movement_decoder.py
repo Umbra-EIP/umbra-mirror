@@ -25,7 +25,7 @@ for key in ["emg_data", "labels", "model"]:
         st.session_state[key] = None
 
 st.set_page_config(page_title="EMG Hand Movement Decoder", layout="wide")
-st.title("🖐️ EMG Semantic Hand Movement Decoder")
+st.title("EMG Semantic Hand Movement Decoder")
 
 st.sidebar.header("Data Selection")
 st.sidebar.radio("Choose data source:", ["Use preprocessed data"])
@@ -115,13 +115,13 @@ if st.button("Run Inference") and emg_data is not None and model is not None:
         df_pred = pd.DataFrame(predictions)
 
         accuracy = correct / total * 100
-        st.header("📊 Inference Metrics")
+        st.header("Inference metrics")
         col1, col2, col3 = st.columns(3)
         col1.metric("Overall Accuracy", f"{accuracy:.2f}%")
         col2.metric("Total Samples", total)
         col3.metric("Correct Predictions", correct)
 
-        st.subheader("✅ Per Gesture Accuracy")
+        st.subheader("Per-gesture accuracy")
         per_gesture_acc = df_pred.groupby("Predicted Gesture")["Correct"].mean() * 100
         per_gesture_acc_df = per_gesture_acc.reset_index().rename(
             columns={"Correct": "Accuracy (%)"}
@@ -140,7 +140,7 @@ if st.button("Run Inference") and emg_data is not None and model is not None:
 
         st.altair_chart(chart, use_container_width=True)
 
-        st.subheader("🔹 Confidence Distribution")
+        st.subheader("Confidence distribution")
         conf_df = df_pred.groupby("Predicted Gesture")["Confidence"].mean().reset_index()
 
         chart_conf = (
@@ -156,5 +156,5 @@ if st.button("Run Inference") and emg_data is not None and model is not None:
 
         st.altair_chart(chart_conf, use_container_width=True)
 
-        st.subheader("📝 Predictions Table")
+        st.subheader("Predictions table")
         st.dataframe(df_pred)

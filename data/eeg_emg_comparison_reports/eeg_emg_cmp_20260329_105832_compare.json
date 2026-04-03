@@ -1,0 +1,31 @@
+{
+  "name": "compare",
+  "saved_at": "2026-03-29T10:58:31",
+  "result": {
+    "npz_path": "data/eeg_emg/_uploads/dataset_augmented.npz",
+    "generated_at": "2026-03-29T10:58:31",
+    "seed": 42,
+    "step": 128,
+    "val_ratio": 0.2,
+    "normalize": true,
+    "resample_eeg": false,
+    "no_cuda": false,
+    "rows": [
+      {
+        "model_file": "eeg2emg_best.pth",
+        "mse": 0.5591901540756226,
+        "r2": 0.41244176005176925,
+        "best_val_mse_in_checkpoint": null,
+        "n_eeg_channels": null,
+        "n_emg_channels": null,
+        "window_size": null,
+        "error": null
+      }
+    ],
+    "config": {
+      "model_dir": "src/eeg_emg",
+      "eeg_fs": null,
+      "emg_fs": null
+    }
+  }
+}

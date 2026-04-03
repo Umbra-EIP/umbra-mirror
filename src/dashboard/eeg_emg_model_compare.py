@@ -29,6 +29,9 @@ class ModelScoreRow:
     model_file: str
     mse: float
     r2: float
+    rmse: float = 0.0
+    mae: float = 0.0
+    mean_pearson: float = 0.0
     best_val_mse_in_checkpoint: Optional[float] = None
     n_eeg_channels: Optional[int] = None
     n_emg_channels: Optional[int] = None
@@ -118,11 +121,12 @@ def run_eeg_emg_comparison(
             )
             row.mse = inf.mse
             row.r2 = inf.r2
-            ckpt = _torch_load_cpu(path)
-            cfg = ckpt.get("config", {})
-            row.n_eeg_channels = cfg.get("n_eeg_channels")
-            row.n_emg_channels = cfg.get("n_emg_channels")
-            row.window_size = cfg.get("window_size")
+            row.rmse = inf.metrics.rmse
+            row.mae = inf.metrics.mae
+            row.mean_pearson = inf.metrics.mean_pearson
+            row.n_eeg_channels = inf.model_cfg.get("n_eeg_channels")
+            row.n_emg_channels = inf.model_cfg.get("n_emg_channels")
+            row.window_size = inf.model_cfg.get("window_size")
         except Exception as exc:
             row.error = str(exc)
         result.rows.append(row)

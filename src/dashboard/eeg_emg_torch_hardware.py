@@ -60,6 +60,8 @@ class TorchLoadProfile:
     n_eeg_channels: Optional[int] = None
     n_emg_channels: Optional[int] = None
     window_size: Optional[int] = None
+    n_params_total: Optional[int] = None
+    n_params_trainable: Optional[int] = None
     load_error: Optional[str] = None
 
 
@@ -103,6 +105,30 @@ def get_torch_system_info() -> TorchSystemInfo:
     )
 
 
+def get_dashboard_system_context() -> dict[str, Any]:
+    """
+    Merge PyTorch/CUDA info with host RAM and CPU counts for the hardware dashboard.
+
+    Used so the EEG–EMG hardware page can mirror the EMG tracker system section.
+    """
+    ti = get_torch_system_info()
+    out: dict[str, Any] = asdict(ti)
+    try:
+        import psutil
+
+        mem = psutil.virtual_memory()
+        out["ram_total_mb"] = mem.total / (1024 * 1024)
+        out["ram_available_mb"] = mem.available / (1024 * 1024)
+        out["cpu_count_physical"] = psutil.cpu_count(logical=False)
+        out["cpu_count_logical"] = psutil.cpu_count(logical=True) or 1
+    except Exception:
+        out["ram_total_mb"] = 0.0
+        out["ram_available_mb"] = 0.0
+        out["cpu_count_physical"] = None
+        out["cpu_count_logical"] = os.cpu_count() or 1
+    return out
+
+
 def run_torch_profile(
     npz_path: str,
     model_file: str,
@@ -127,7 +153,6 @@ def run_torch_profile(
     if batch_sizes is None:
         batch_sizes = [1, 4, 8, 16]
 
-    sys_info = get_torch_system_info()
     path = os.path.join(model_dir, model_file)
     loading = TorchLoadProfile(
         model_file=model_file,
@@ -151,6 +176,8 @@ def run_torch_profile(
         loading.n_eeg_channels = cfg.get("n_eeg_channels")
         loading.n_emg_channels = cfg.get("n_emg_channels")
         loading.window_size = cfg.get("window_size")
+        loading.n_params_total = sum(p.numel() for p in model.parameters())
+        loading.n_params_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     except Exception as exc:
         loading.load_error = str(exc)
         loading.load_time_s = time.perf_counter() - t0
@@ -158,7 +185,7 @@ def run_torch_profile(
             generated_at=datetime.now().isoformat(timespec="seconds"),
             npz_path=npz_path,
             model_file=model_file,
-            system=asdict(sys_info),
+            system=get_dashboard_system_context(),
             loading=asdict(loading),
             inference=[],
             config={"batch_sizes": batch_sizes, "error": "load_failed"},
@@ -185,7 +212,7 @@ def run_torch_profile(
             generated_at=datetime.now().isoformat(timespec="seconds"),
             npz_path=npz_path,
             model_file=model_file,
-            system=asdict(sys_info),
+            system=get_dashboard_system_context(),
             loading=asdict(loading),
             inference=[],
             config={"error": "no_windows"},
@@ -241,7 +268,7 @@ def run_torch_profile(
         generated_at=datetime.now().isoformat(timespec="seconds"),
         npz_path=npz_path,
         model_file=model_file,
-        system=asdict(sys_info),
+        system=get_dashboard_system_context(),
         loading=asdict(loading),
         inference=inference_rows,
         config={
@@ -250,6 +277,7 @@ def run_torch_profile(
             "step": step,
             "val_ratio": val_ratio,
             "device": str(device),
+            "window_size": ws,
         },
     )
 

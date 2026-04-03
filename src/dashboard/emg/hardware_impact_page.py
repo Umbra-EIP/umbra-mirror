@@ -28,7 +28,6 @@ from src.dashboard.hardware_profiler import (
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Hardware Impact Tracker | Umbra",
-    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -249,7 +248,7 @@ else:
 # ── Run button ───────────────────────────────────────────────────────────────
 st.sidebar.divider()
 run_btn = st.sidebar.button(
-    "▶  Run Profile",
+    "Run profile",
     type="primary",
     use_container_width=True,
 )
@@ -257,7 +256,7 @@ run_btn = st.sidebar.button(
 # ─────────────────────────────────────────────────────────────────────────────
 # Page header
 # ─────────────────────────────────────────────────────────────────────────────
-st.title("⚡ Hardware Impact Tracker")
+st.title("Hardware Impact Tracker")
 st.caption(
     "Profile a Keras model's resource footprint — RAM & GPU memory at load time, "
     "inference latency across batch sizes, throughput, and peak memory under sustained load."
@@ -274,7 +273,7 @@ if run_btn:
 
     def _cb(label: str, done: int, total: int) -> None:
         _bar.progress(done / max(total, 1))
-        _status.caption(f"⏳ {label}")
+        _status.caption(label)
 
     with st.spinner(""):
         report = run_hardware_profile(
@@ -302,10 +301,10 @@ if report is None:
     st.markdown(
         """
         <div class="empty-state">
-            <div class="empty-icon">⚡</div>
+            <div class="empty-icon">&nbsp;</div>
             <div class="empty-title">No profile run yet</div>
             <div class="empty-body">
-                Select a model in the sidebar and click <strong>▶ Run Profile</strong>,
+                Select a model in the sidebar and click <strong>Run profile</strong>,
                 or load a saved report.
             </div>
         </div>
@@ -352,7 +351,7 @@ def _fmt_params(n: int | None) -> str:
 # Synthetic data notice
 if _used_synth:
     st.markdown(
-        '<div class="synth-note">⚠️ <strong>Synthetic data</strong> — '
+        '<div class="synth-note"><strong>Synthetic data</strong> — '
         "no real dataset was used. Latency measurements are accurate; "
         "confidence/class-level metrics are not applicable.</div>",
         unsafe_allow_html=True,
@@ -484,9 +483,7 @@ if _bi:
         ]
     )
 
-    tab_table, tab_latency, tab_throughput = st.tabs(
-        ["📋 Table", "⚡ Latency vs Batch", "🚀 Throughput"]
-    )
+    tab_table, tab_latency, tab_throughput = st.tabs(["Table", "Latency vs batch", "Throughput"])
 
     with tab_table:
         st.dataframe(
@@ -651,7 +648,7 @@ if _st is not None:
         sr2.metric("Peak GPU mem", "N/A")
 
     tab_timeline, tab_dist, tab_pct = st.tabs(
-        ["📈 Latency timeline", "📊 Distribution", "🎯 Percentile table"]
+        ["Latency timeline", "Distribution", "Percentile table"]
     )
 
     with tab_timeline:
@@ -839,7 +836,7 @@ ex1, ex2, _ = st.columns([1, 1, 3])
 with ex1:
     if _bi:
         st.download_button(
-            "⬇ Batch CSV",
+            "Batch CSV",
             data=df_bi.to_csv(index=False),
             file_name=f"hw_batch_{report.model_name.replace('.keras', '')}.csv",
             mime="text/csv",
@@ -858,7 +855,7 @@ with ex2:
         ).strip()
         or "default"
     )
-    if st.button("💾 Save report", key="hw_save_btn"):
+    if st.button("Save report", key="hw_save_btn"):
         try:
             p = save_report(report, name=save_name)
             st.success(f"Saved as **{p.name}**")
